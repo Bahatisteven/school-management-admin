@@ -5,11 +5,13 @@ const feeTransactionSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Student',
     required: true,
+    index: true,
   },
   type: {
     type: String,
     enum: ['deposit', 'withdraw'],
     required: true,
+    index: true,
   },
   amount: {
     type: Number,
@@ -21,6 +23,7 @@ const feeTransactionSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'completed', 'rejected'],
     default: 'completed',
+    index: true,
   },
   processedBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -30,9 +33,12 @@ const feeTransactionSchema = new mongoose.Schema({
   transactionDate: {
     type: Date,
     default: Date.now,
+    index: true,
   },
 }, {
   timestamps: true,
 });
+
+feeTransactionSchema.index({ studentId: 1, transactionDate: -1 });
 
 module.exports = mongoose.model('FeeTransaction', feeTransactionSchema);

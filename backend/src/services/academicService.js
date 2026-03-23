@@ -2,6 +2,9 @@ const Student = require('../models/Student');
 const Grade = require('../models/Grade');
 const Attendance = require('../models/Attendance');
 const Class = require('../models/Class');
+const GradeDTO = require('../dtos/GradeDTO');
+const AttendanceDTO = require('../dtos/AttendanceDTO');
+const { NotFoundError } = require('../utils/errors');
 
 class AcademicService {
   async getStudentGrades(studentId) {
@@ -9,18 +12,7 @@ class AcademicService {
       .populate('teacherId', 'firstName lastName')
       .sort({ recordedDate: -1 });
 
-    return grades.map(grade => ({
-      id: grade._id,
-      subject: grade.subject,
-      score: grade.score,
-      grade: grade.grade,
-      term: grade.term,
-      academicYear: grade.academicYear,
-      examType: grade.examType,
-      remarks: grade.remarks,
-      teacher: grade.teacherId ? `${grade.teacherId.firstName} ${grade.teacherId.lastName}` : null,
-      recordedDate: grade.recordedDate,
-    }));
+    return GradeDTO.toClientList(grades);
   }
 
   async getStudentAttendance(studentId, startDate, endDate) {
@@ -36,26 +28,20 @@ class AcademicService {
       .populate('recordedBy', 'firstName lastName')
       .sort({ date: -1 });
 
-    return attendance.map(record => ({
-      id: record._id,
-      date: record.date,
-      status: record.status,
-      remarks: record.remarks,
-      recordedBy: record.recordedBy ? `${record.recordedBy.firstName} ${record.recordedBy.lastName}` : null,
-    }));
+    return AttendanceDTO.toClientList(attendance);
   }
 
   async getStudentTimetable(studentId) {
     const student = await Student.findById(studentId).populate('classId');
     if (!student || !student.classId) {
-      throw new Error('Student class not found');
+      throw new NotFoundError('Student class');
     }
 
     const classData = await Class.findById(student.classId)
       .populate('schedule.teacherId', 'firstName lastName');
 
     if (!classData) {
-      throw new Error('Class not found');
+      throw new NotFoundError('Class');
     }
 
     return {
@@ -76,13 +62,21 @@ class AcademicService {
   async addGrade(gradeData) {
     const grade = new Grade(gradeData);
     await grade.save();
-    return grade;
+    
+    const populatedGrade = await Grade.findById(grade._id)
+      .populate('teacherId', 'firstName lastName');
+    
+    return GradeDTO.toClient(populatedGrade);
   }
 
   async recordAttendance(attendanceData) {
     const attendance = new Attendance(attendanceData);
     await attendance.save();
-    return attendance;
+    
+    const populatedAttendance = await Attendance.findById(attendance._id)
+      .populate('recordedBy', 'firstName lastName');
+    
+    return AttendanceDTO.toClient(populatedAttendance);
   }
 }
 

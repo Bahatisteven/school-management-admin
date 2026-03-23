@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
     unique: true,
     lowercase: true,
     trim: true,
+    index: true,
   },
   password: {
     type: String,
@@ -28,6 +29,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['admin', 'teacher', 'student', 'parent'],
     required: true,
+    index: true,
   },
   phoneNumber: {
     type: String,
@@ -56,6 +58,7 @@ const userSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true,
+    index: true,
   },
   lastLogin: Date,
 }, {
@@ -65,15 +68,12 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   
-  // First apply SHA-512 hashing as per requirements
   const sha512Hash = crypto.createHash('sha512').update(this.password).digest('hex');
-  // Then apply bcrypt for additional security
   this.password = await bcrypt.hash(sha512Hash, 12);
   next();
 });
 
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  // Apply SHA-512 to candidate password before comparing
   const sha512Hash = crypto.createHash('sha512').update(candidatePassword).digest('hex');
   return await bcrypt.compare(sha512Hash, this.password);
 };
@@ -83,5 +83,7 @@ userSchema.methods.hasVerifiedDevice = function(deviceId) {
     device.deviceId === deviceId && device.isVerified
   );
 };
+
+userSchema.index({ 'deviceIds.isVerified': 1 });
 
 module.exports = mongoose.model('User', userSchema);

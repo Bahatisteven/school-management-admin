@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const { auth, authorize } = require('../middlewares/auth');
-const { registerValidation, loginValidation } = require('../middlewares/validation');
+const { registerValidation, loginValidation, verifyDeviceValidation } = require('../middlewares/validation');
 const { ROLES } = require('../config/constants');
 
 router.post('/register', registerValidation, authController.register);
@@ -14,6 +14,7 @@ router.post(
   '/verify-device',
   auth,
   authorize(ROLES.ADMIN),
+  verifyDeviceValidation,
   authController.verifyDevice
 );
 

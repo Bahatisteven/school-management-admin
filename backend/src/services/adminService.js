@@ -5,6 +5,10 @@ const Class = require('../models/Class');
 const FeeTransaction = require('../models/FeeTransaction');
 const Grade = require('../models/Grade');
 const Attendance = require('../models/Attendance');
+const StudentDTO = require('../dtos/StudentDTO');
+const TeacherDTO = require('../dtos/TeacherDTO');
+const ClassDTO = require('../dtos/ClassDTO');
+const { NotFoundError, ConflictError } = require('../utils/errors');
 
 class AdminService {
   async getDashboardStats() {
@@ -59,7 +63,7 @@ class AdminService {
     const total = await Student.countDocuments(query);
 
     return {
-      students,
+      students: students.map(s => StudentDTO.toClient(s, s.userId)),
       pagination: {
         page,
         limit,
@@ -80,7 +84,7 @@ class AdminService {
     const total = await Teacher.countDocuments();
 
     return {
-      teachers,
+      teachers: TeacherDTO.toClientList(teachers),
       pagination: {
         page,
         limit,
@@ -95,53 +99,54 @@ class AdminService {
       .populate('teacherId', 'firstName lastName')
       .sort({ name: 1 });
 
-    return classes;
+    return ClassDTO.toClientList(classes);
   }
 
   async createClass(classData) {
     const existingClass = await Class.findOne({ name: classData.name });
     if (existingClass) {
-      throw new Error('Class with this name already exists');
+      throw new ConflictError('Class with this name already exists');
     }
 
     const newClass = new Class(classData);
     await newClass.save();
-    return newClass;
+    
+    return ClassDTO.toClient(newClass);
   }
 
   async updateClass(classId, updates) {
     const classDoc = await Class.findByIdAndUpdate(classId, updates, {
       new: true,
       runValidators: true,
-    });
+    }).populate('teacherId', 'firstName lastName');
 
     if (!classDoc) {
-      throw new Error('Class not found');
+      throw new NotFoundError('Class');
     }
 
-    return classDoc;
+    return ClassDTO.toClient(classDoc);
   }
 
   async deleteClass(classId) {
     const classDoc = await Class.findByIdAndDelete(classId);
     if (!classDoc) {
-      throw new Error('Class not found');
+      throw new NotFoundError('Class');
     }
 
     await Student.updateMany({ classId }, { $unset: { classId: 1 } });
 
-    return classDoc;
+    return ClassDTO.toClient(classDoc);
   }
 
   async assignTeacherToClass(teacherId, classId) {
     const teacher = await Teacher.findById(teacherId);
     if (!teacher) {
-      throw new Error('Teacher not found');
+      throw new NotFoundError('Teacher');
     }
 
     const classDoc = await Class.findById(classId);
     if (!classDoc) {
-      throw new Error('Class not found');
+      throw new NotFoundError('Class');
     }
 
     if (!teacher.assignedClasses.includes(classId)) {
@@ -152,7 +157,17 @@ class AdminService {
     classDoc.teacherId = teacherId;
     await classDoc.save();
 
-    return { teacher, class: classDoc };
+    const populatedTeacher = await Teacher.findById(teacherId)
+      .populate('userId', 'firstName lastName email phoneNumber')
+      .populate('assignedClasses', 'name grade');
+    
+    const populatedClass = await Class.findById(classId)
+      .populate('teacherId', 'firstName lastName');
+
+    return { 
+      teacher: TeacherDTO.toClient(populatedTeacher), 
+      class: ClassDTO.toClient(populatedClass),
+    };
   }
 
   async getAllFeeTransactions(page = 1, limit = 50, filters = {}) {

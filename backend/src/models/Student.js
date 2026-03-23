@@ -5,19 +5,23 @@ const studentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
+    index: true,
   },
   studentId: {
     type: String,
     required: true,
     unique: true,
+    index: true,
   },
   classId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Class',
+    index: true,
   },
   parentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
+    index: true,
   },
   feeBalance: {
     type: Number,

@@ -1,12 +1,17 @@
 const Student = require('../models/Student');
 const FeeTransaction = require('../models/FeeTransaction');
 const FeeTransactionDTO = require('../dtos/FeeTransactionDTO');
+const { NotFoundError, InsufficientBalanceError, ValidationError } = require('../utils/errors');
 
 class FeeService {
   async deposit(studentId, amount, description, processedBy) {
+    if (amount <= 0) {
+      throw new ValidationError('Amount must be greater than zero');
+    }
+
     const student = await Student.findById(studentId);
     if (!student) {
-      throw new Error('Student not found');
+      throw new NotFoundError('Student');
     }
 
     student.feeBalance += amount;
@@ -32,13 +37,19 @@ class FeeService {
   }
 
   async withdraw(studentId, amount, description, processedBy) {
+    if (amount <= 0) {
+      throw new ValidationError('Amount must be greater than zero');
+    }
+
     const student = await Student.findById(studentId);
     if (!student) {
-      throw new Error('Student not found');
+      throw new NotFoundError('Student');
     }
 
     if (student.feeBalance < amount) {
-      throw new Error('Insufficient balance');
+      throw new InsufficientBalanceError(
+        `Insufficient balance. Available: ${student.feeBalance}, Requested: ${amount}`
+      );
     }
 
     student.feeBalance -= amount;
@@ -66,7 +77,7 @@ class FeeService {
   async getBalance(studentId) {
     const student = await Student.findById(studentId);
     if (!student) {
-      throw new Error('Student not found');
+      throw new NotFoundError('Student');
     }
 
     return {

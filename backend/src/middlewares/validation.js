@@ -54,19 +54,54 @@ const withdrawValidation = [
 
 const gradeValidation = [
   body('studentId').isMongoId().withMessage('Valid student ID is required'),
+  body('classId').isMongoId().withMessage('Valid class ID is required'),
   body('subject').trim().notEmpty().isLength({ min: 2, max: 100 }).withMessage('Subject is required'),
   body('score').isFloat({ min: 0, max: 100 }).withMessage('Score must be between 0 and 100'),
   body('examType').isIn(['quiz', 'midterm', 'final', 'assignment']).withMessage('Invalid exam type'),
   body('term').isIn(['1', '2', '3']).withMessage('Invalid term'),
   body('academicYear').isInt({ min: 2000, max: 2100 }).withMessage('Invalid academic year'),
+  body('remarks').optional().trim().isLength({ max: 500 }),
   validate,
 ];
 
 const attendanceValidation = [
   body('studentId').isMongoId().withMessage('Valid student ID is required'),
+  body('classId').isMongoId().withMessage('Valid class ID is required'),
   body('status').isIn(['present', 'absent', 'late', 'excused']).withMessage('Invalid status'),
   body('date').isISO8601().withMessage('Valid date is required'),
   body('remarks').optional().trim().isLength({ max: 500 }),
+  validate,
+];
+
+const createClassValidation = [
+  body('name').trim().notEmpty().isLength({ min: 2, max: 100 }).withMessage('Class name is required (2-100 chars)'),
+  body('grade').trim().notEmpty().isLength({ min: 1, max: 50 }).withMessage('Grade is required'),
+  body('section').optional().trim().isLength({ max: 50 }),
+  body('academicYear').trim().notEmpty().matches(/^\d{4}(-\d{4})?$/).withMessage('Academic year format: YYYY or YYYY-YYYY'),
+  body('capacity').optional().isInt({ min: 1, max: 200 }).withMessage('Capacity must be between 1 and 200'),
+  body('teacherId').optional().isMongoId().withMessage('Invalid teacher ID'),
+  validate,
+];
+
+const updateClassValidation = [
+  body('name').optional().trim().isLength({ min: 2, max: 100 }),
+  body('grade').optional().trim().isLength({ min: 1, max: 50 }),
+  body('section').optional().trim().isLength({ max: 50 }),
+  body('academicYear').optional().trim().matches(/^\d{4}(-\d{4})?$/),
+  body('capacity').optional().isInt({ min: 1, max: 200 }),
+  body('teacherId').optional().isMongoId(),
+  validate,
+];
+
+const assignTeacherValidation = [
+  body('teacherId').isMongoId().withMessage('Valid teacher ID is required'),
+  body('classId').isMongoId().withMessage('Valid class ID is required'),
+  validate,
+];
+
+const verifyDeviceValidation = [
+  body('userId').isMongoId().withMessage('Valid user ID is required'),
+  body('deviceId').trim().notEmpty().isLength({ min: 5, max: 100 }).withMessage('Valid device ID is required'),
   validate,
 ];
 
@@ -89,6 +124,12 @@ const idValidation = [
   validate,
 ];
 
+const paginationValidation = [
+  query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
+  query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
+  validate,
+];
+
 module.exports = {
   registerValidation,
   loginValidation,
@@ -96,8 +137,13 @@ module.exports = {
   withdrawValidation,
   gradeValidation,
   attendanceValidation,
+  createClassValidation,
+  updateClassValidation,
+  assignTeacherValidation,
+  verifyDeviceValidation,
   updateProfileValidation,
   dateRangeValidation,
   idValidation,
+  paginationValidation,
   validate,
 };

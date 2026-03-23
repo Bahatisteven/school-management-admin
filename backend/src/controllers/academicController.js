@@ -1,21 +1,10 @@
 const academicService = require('../services/academicService');
-const studentService = require('../services/studentService');
+const studentIdentifier = require('../utils/studentIdentifier');
 
 class AcademicController {
   async getGrades(req, res, next) {
     try {
-      let studentId;
-      
-      if (req.user.role === 'student') {
-        const profile = await studentService.getStudentProfile(req.user._id);
-        studentId = profile.id;
-      } else if (req.user.role === 'parent') {
-        const { childStudentId } = req.params;
-        studentId = childStudentId;
-      } else {
-        return res.status(403).json({ error: 'Access denied' });
-      }
-
+      const studentId = await studentIdentifier.resolveStudentIdFromParams(req.user, req.params);
       const grades = await academicService.getStudentGrades(studentId);
       
       res.json({
@@ -30,18 +19,7 @@ class AcademicController {
   async getAttendance(req, res, next) {
     try {
       const { startDate, endDate } = req.query;
-      let studentId;
-      
-      if (req.user.role === 'student') {
-        const profile = await studentService.getStudentProfile(req.user._id);
-        studentId = profile.id;
-      } else if (req.user.role === 'parent') {
-        const { childStudentId } = req.params;
-        studentId = childStudentId;
-      } else {
-        return res.status(403).json({ error: 'Access denied' });
-      }
-
+      const studentId = await studentIdentifier.resolveStudentIdFromParams(req.user, req.params);
       const attendance = await academicService.getStudentAttendance(studentId, startDate, endDate);
       
       res.json({
@@ -55,18 +33,7 @@ class AcademicController {
 
   async getTimetable(req, res, next) {
     try {
-      let studentId;
-      
-      if (req.user.role === 'student') {
-        const profile = await studentService.getStudentProfile(req.user._id);
-        studentId = profile.id;
-      } else if (req.user.role === 'parent') {
-        const { childStudentId } = req.params;
-        studentId = childStudentId;
-      } else {
-        return res.status(403).json({ error: 'Access denied' });
-      }
-
+      const studentId = await studentIdentifier.resolveStudentIdFromParams(req.user, req.params);
       const timetable = await academicService.getStudentTimetable(studentId);
       
       res.json({

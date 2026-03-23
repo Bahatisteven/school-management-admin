@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Student = require('../models/Student');
 const { generateStudentId } = require('../utils/helpers');
 const UserDTO = require('../dtos/UserDTO');
+const { ConflictError, UnauthorizedError, NotFoundError } = require('../utils/errors');
 
 class AuthService {
   async register(userData) {
@@ -10,7 +11,7 @@ class AuthService {
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      throw new Error('Email already registered');
+      throw new ConflictError('Email already registered');
     }
 
     const user = new User({
@@ -39,12 +40,12 @@ class AuthService {
   async login(email, password, deviceId, deviceName) {
     const user = await User.findOne({ email, isActive: true });
     if (!user) {
-      throw new Error('Invalid credentials');
+      throw new UnauthorizedError('Invalid credentials');
     }
 
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
-      throw new Error('Invalid credentials');
+      throw new UnauthorizedError('Invalid credentials');
     }
 
     const existingDevice = user.deviceIds.find(d => d.deviceId === deviceId);
@@ -91,16 +92,16 @@ class AuthService {
   async verifyDevice(userId, deviceId, adminId) {
     const user = await User.findById(userId);
     if (!user) {
-      throw new Error('User not found');
+      throw new NotFoundError('User');
     }
 
     const device = user.deviceIds.find(d => d.deviceId === deviceId);
     if (!device) {
-      throw new Error('Device not found');
+      throw new NotFoundError('Device');
     }
 
     if (device.isVerified) {
-      throw new Error('Device already verified');
+      throw new ConflictError('Device already verified');
     }
 
     device.isVerified = true;

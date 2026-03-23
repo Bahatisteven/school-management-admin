@@ -1,12 +1,13 @@
 const Student = require('../models/Student');
 const User = require('../models/User');
 const StudentDTO = require('../dtos/StudentDTO');
+const { NotFoundError } = require('../utils/errors');
 
 class StudentService {
   async getStudentProfile(userId) {
     const student = await Student.findOne({ userId }).populate('classId');
     if (!student) {
-      throw new Error('Student profile not found');
+      throw new NotFoundError('Student profile');
     }
 
     const user = await User.findById(userId).select('-password');
@@ -16,7 +17,7 @@ class StudentService {
   async getStudentByStudentId(studentId) {
     const student = await Student.findOne({ studentId }).populate('classId userId');
     if (!student) {
-      throw new Error('Student not found');
+      throw new NotFoundError('Student');
     }
 
     return StudentDTO.toClient(student, student.userId);
@@ -25,7 +26,7 @@ class StudentService {
   async updateStudentProfile(studentId, updates) {
     const student = await Student.findById(studentId);
     if (!student) {
-      throw new Error('Student not found');
+      throw new NotFoundError('Student');
     }
 
     Object.assign(student, updates);
