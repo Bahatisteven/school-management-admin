@@ -10,6 +10,7 @@ const swaggerSpec = require('./config/swagger');
 const connectDB = require('./config/database');
 const routes = require('./routes');
 const errorHandler = require('./middlewares/errorHandler');
+const { RATE_LIMIT } = require('./config/constants');
 
 const app = express();
 
@@ -43,8 +44,8 @@ app.use(cors({
 }));
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+  windowMs: RATE_LIMIT.WINDOW_MS,
+  max: RATE_LIMIT.MAX_REQUESTS,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
