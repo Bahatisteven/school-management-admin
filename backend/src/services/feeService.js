@@ -112,7 +112,7 @@ class FeeService {
       const cooldownMs = LOW_BALANCE_NOTIFICATION_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
       const recentNotification = await require('../models/Notification').findOne({
         userId: student.userId._id,
-        type: 'low_balance',
+        type: require('../config/constants').NOTIFICATION_TYPES.LOW_BALANCE,
         createdAt: { $gte: new Date(Date.now() - cooldownMs) },
       });
 
