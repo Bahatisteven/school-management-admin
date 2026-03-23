@@ -24,7 +24,10 @@ class AdminService {
       Student.countDocuments(),
       Teacher.countDocuments(),
       Class.countDocuments(),
-      User.countDocuments({ 'deviceIds.isVerified': false }),
+      User.countDocuments({ 
+        'deviceIds.isVerified': false,
+        role: { $ne: 'admin' } // Only count client pending verifications
+      }),
       FeeTransaction.aggregate([
         { $match: { type: TRANSACTION_TYPES.DEPOSIT, status: TRANSACTION_STATUS.COMPLETED } },
         { $group: { _id: null, total: { $sum: '$amount' } } },

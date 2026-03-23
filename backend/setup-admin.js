@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
+require('dotenv').config();
+const User = require('./src/models/User');
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/school_management';
 
@@ -8,17 +8,6 @@ async function setupAdmin() {
   try {
     await mongoose.connect(MONGODB_URI);
     console.log('Connected to MongoDB');
-
-    const User = mongoose.model('User', new mongoose.Schema({
-      email: String,
-      password: String,
-      firstName: String,
-      lastName: String,
-      role: String,
-      phoneNumber: String,
-      deviceIds: Array,
-      isActive: Boolean,
-    }));
 
     const existingAdmin = await User.findOne({ email: 'admin@school.com' });
     
@@ -31,12 +20,10 @@ async function setupAdmin() {
 
     // create admin
     const password = 'Admin@123';
-    const sha512Hash = crypto.createHash('sha512').update(password).digest('hex');
-    const hashedPassword = await bcrypt.hash(sha512Hash, 12);
 
     const admin = new User({
       email: 'admin@school.com',
-      password: hashedPassword,
+      password: password,
       firstName: 'System',
       lastName: 'Administrator',
       role: 'admin',

@@ -13,11 +13,19 @@ function Verifications() {
   }, []);
 
   const loadPendingVerifications = async () => {
+    setLoading(true);
+    setError('');
     try {
       const response = await adminService.getPendingVerifications();
+      console.log('Pending verifications response:', response);
       setPending(response.data);
     } catch (error) {
       console.error('Error loading verifications:', error);
+      if (error.response?.status === 401) {
+        setError('Session expired. Please login again.');
+      } else {
+        setError(error.response?.data?.error || 'Failed to load pending verifications');
+      }
     } finally {
       setLoading(false);
     }
@@ -40,72 +48,103 @@ function Verifications() {
     <>
       <Navbar />
       <div className="container">
-        <h1 style={{ marginBottom: '30px' }}>Device Verifications</h1>
+        <div className="page-header">
+          <h1>Device Verifications</h1>
+          <p>Review and approve device access requests</p>
+        </div>
 
         {error && <div className="alert alert-error">{error}</div>}
         {success && <div className="alert alert-success">{success}</div>}
 
-        <div className="card">
-          <h2>Pending Verifications ({pending.length})</h2>
+        {loading ? (
+          <div className="card">
+            <div className="loading">
+              <div className="loading-spinner"></div>
+              <div className="loading-text">Loading verifications...</div>
+            </div>
+          </div>
+        ) : (
+          <div className="card chart-card">
+            <div className="chart-header">
+              <h2 className="chart-title">Pending Verifications</h2>
+              <p className="chart-subtitle">{pending.length} device(s) awaiting approval</p>
+            </div>
 
-          {loading ? (
-            <div className="loading">Loading...</div>
-          ) : pending.length > 0 ? (
-            <div style={{ marginTop: '20px' }}>
-              {pending.map((item) => (
-                <div
-                  key={item.user.id}
-                  style={{
-                    padding: '20px',
-                    background: '#f9fafb',
-                    borderRadius: '8px',
-                    marginBottom: '15px',
-                    border: '1px solid #e5e7eb',
-                  }}
-                >
-                  <h3 style={{ marginBottom: '10px' }}>
-                    {item.user.firstName} {item.user.lastName}
-                  </h3>
-                  <p><strong>Email:</strong> {item.user.email}</p>
-                  <p><strong>Role:</strong> {item.user.role}</p>
-
-                  <div style={{ marginTop: '15px' }}>
-                    <h4 style={{ marginBottom: '10px', color: '#6b7280' }}>Pending Devices:</h4>
-                    {item.pendingDevices.map((device) => (
-                      <div
-                        key={device.deviceId}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          padding: '10px',
-                          background: 'white',
-                          borderRadius: '4px',
-                          marginBottom: '10px',
-                        }}
-                      >
+            {pending.length > 0 ? (
+              <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {pending.map((item) => (
+                  <div
+                    key={item.user.id}
+                    className="verification-card"
+                  >
+                    <div className="verification-header">
+                      <div className="verification-user-info">
+                        <div className="verification-avatar">
+                          {item.user.firstName?.charAt(0)}{item.user.lastName?.charAt(0)}
+                        </div>
                         <div>
-                          <p><strong>Device:</strong> {device.deviceName}</p>
-                          <p style={{ fontSize: '12px', color: '#6b7280' }}>
-                            Added: {new Date(device.addedAt).toLocaleString()}
+                          <h3 className="verification-name">
+                            {item.user.firstName} {item.user.lastName}
+                          </h3>
+                          <p className="verification-detail">
+                            <strong>Email:</strong> {item.user.email}
+                          </p>
+                          <p className="verification-detail">
+                            <strong>Role:</strong> <span className="badge badge-info">{item.user.role}</span>
                           </p>
                         </div>
-                        <button
-                          className="btn btn-success"
-                          onClick={() => handleVerify(item.user.id, device.deviceId)}
-                        >
-                          Verify
-                        </button>
                       </div>
-                    ))}
+                    </div>
+
+                    <div className="verification-devices">
+                      <h4 className="devices-title">Pending Devices:</h4>
+                      {item.pendingDevices.map((device) => (
+                        <div
+                          key={device.deviceId}
+                          className="device-item"
+                        >
+                          <div className="device-info">
+                            <svg className="device-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            <div>
+                              <p className="device-name"><strong>{device.deviceName}</strong></p>
+                              <p className="device-date">
+                                Added: {new Date(device.addedAt).toLocaleString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            className="btn btn-success btn-sm"
+                            onClick={() => handleVerify(item.user.id, device.deviceId)}
+                          >
+                            <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Approve
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p style={{ marginTop: '20px' }}>No pending verifications</p>
-          )}
-        </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <svg style={{ width: '48px', height: '48px', opacity: 0.2, marginBottom: '12px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="empty-state-text">No pending verifications</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </>
   );

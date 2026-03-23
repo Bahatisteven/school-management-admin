@@ -59,13 +59,19 @@ class AuthService {
     const existingDevice = user.deviceIds.find(d => d.deviceId === deviceId);
     
     if (user.role === 'admin') {
+      // Auto-verify admin devices - admins don't need approval
       if (!existingDevice) {
         user.deviceIds.push({
           deviceId,
           deviceName: deviceName || 'Unknown Device',
-          isVerified: true, // Auto-verify admin devices
+          isVerified: true,
           verifiedAt: new Date(),
         });
+        await user.save();
+      } else if (!existingDevice.isVerified) {
+        // auto-verify it for admins
+        existingDevice.isVerified = true;
+        existingDevice.verifiedAt = new Date();
         await user.save();
       }
       
@@ -152,6 +158,7 @@ class AuthService {
   async getPendingVerifications() {
     const users = await User.find({
       'deviceIds.isVerified': false,
+      role: { $ne: 'admin' } // Exclude admins - they auto-verify
     }).select('-password');
 
     return users.map(user => ({
