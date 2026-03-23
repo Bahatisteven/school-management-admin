@@ -3,8 +3,13 @@ const FeeTransaction = require('../models/FeeTransaction');
 const FeeTransactionDTO = require('../dtos/FeeTransactionDTO');
 const notificationService = require('./notificationService');
 const { NotFoundError, InsufficientBalanceError, ValidationError } = require('../utils/errors');
-
-const LOW_BALANCE_THRESHOLD = 50000;
+const { 
+  LOW_BALANCE_THRESHOLD, 
+  LOW_BALANCE_NOTIFICATION_COOLDOWN_DAYS,
+  PAGINATION,
+  TRANSACTION_STATUS,
+  TRANSACTION_TYPES,
+} = require('../config/constants');
 
 class FeeService {
   async deposit(studentId, amount, description, processedBy) {
@@ -23,10 +28,10 @@ class FeeService {
 
     const transaction = new FeeTransaction({
       studentId,
-      type: 'deposit',
+      type: TRANSACTION_TYPES.DEPOSIT,
       amount,
       description: description || 'Fee deposit',
-      status: 'completed',
+      status: TRANSACTION_STATUS.COMPLETED,
       processedBy,
       balanceAfter,
     });
@@ -69,10 +74,10 @@ class FeeService {
 
     const transaction = new FeeTransaction({
       studentId,
-      type: 'withdraw',
+      type: TRANSACTION_TYPES.WITHDRAW,
       amount,
       description: description || 'Fee withdrawal',
-      status: 'completed',
+      status: TRANSACTION_STATUS.COMPLETED,
       processedBy,
       balanceAfter,
     });
@@ -104,10 +109,11 @@ class FeeService {
     }
 
     if (student.userId && student.feeBalance < LOW_BALANCE_THRESHOLD) {
+      const cooldownMs = LOW_BALANCE_NOTIFICATION_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
       const recentNotification = await require('../models/Notification').findOne({
         userId: student.userId._id,
         type: 'low_balance',
-        createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+        createdAt: { $gte: new Date(Date.now() - cooldownMs) },
       });
 
       if (!recentNotification) {
@@ -123,7 +129,7 @@ class FeeService {
     };
   }
 
-  async getTransactionHistory(studentId, limit = 50) {
+  async getTransactionHistory(studentId, limit = PAGINATION.TRANSACTION_LIMIT) {
     const transactions = await FeeTransaction.find({ studentId })
       .sort({ transactionDate: -1 })
       .limit(limit);
