@@ -81,7 +81,7 @@ class NotificationService {
   async notifyPaymentConfirmed(userId, amount, newBalance) {
     return this.create(
       userId,
-      'payment_confirmation',
+      NOTIFICATION_TYPES.PAYMENT_CONFIRMED,
       'Payment Confirmed',
       `Your payment of RWF ${amount.toLocaleString()} has been confirmed. New balance: RWF ${newBalance.toLocaleString()}`,
       { amount, newBalance }
@@ -91,27 +91,28 @@ class NotificationService {
   async notifyRefundProcessed(userId, amount, newBalance) {
     return this.create(
       userId,
-      'refund_status',
+      NOTIFICATION_TYPES.REFUND_PROCESSED,
       'Refund Processed',
       `Your refund request of RWF ${amount.toLocaleString()} has been processed. New balance: RWF ${newBalance.toLocaleString()}`,
       { amount, newBalance }
     );
   }
 
-  async notifyLowBalance(userId, balance, threshold = 50000) {
+  async notifyLowBalance(userId, balance) {
+    const { LOW_BALANCE_THRESHOLD } = require('../config/constants');
     return this.create(
       userId,
-      'low_balance',
+      NOTIFICATION_TYPES.LOW_BALANCE,
       'Low Balance Warning',
       `Your fee balance is low (RWF ${balance.toLocaleString()}). Please top up to avoid service interruption.`,
-      { balance, threshold }
+      { balance, threshold: LOW_BALANCE_THRESHOLD }
     );
   }
 
   async notifyDeviceVerified(userId, deviceName) {
     return this.create(
       userId,
-      'device_verified',
+      NOTIFICATION_TYPES.DEVICE_VERIFIED,
       'Device Verified',
       `Your device "${deviceName}" has been verified by an administrator. You can now access the system.`,
       { deviceName }
@@ -121,7 +122,7 @@ class NotificationService {
   async notifySuccessfulLogin(userId, deviceName) {
     return this.create(
       userId,
-      'login_success',
+      NOTIFICATION_TYPES.LOGIN_SUCCESS,
       'Successful Login',
       `Successful login from device "${deviceName}" at ${new Date().toLocaleString()}`,
       { deviceName, loginTime: new Date() }
