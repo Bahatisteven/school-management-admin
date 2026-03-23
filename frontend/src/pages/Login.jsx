@@ -169,10 +169,6 @@ function Login() {
             )}
           </button>
         </form>
-
-        <p style={styles.footer}>
-          Admin access only • Secure login required
-        </p>
       </div>
     </div>
   );

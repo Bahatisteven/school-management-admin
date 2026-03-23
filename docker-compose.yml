@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: admin-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-admin123}
+      MONGO_INITDB_DATABASE: school_management
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - admin-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: admin-backend
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      NODE_ENV: production
+      PORT: 5001
+      MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-admin123}@mongodb:27017/school_management?authSource=admin
+      JWT_SECRET: ${JWT_SECRET}
+      TOKEN_EXPIRY: ${TOKEN_EXPIRY:-24h}
+      CLIENT_URL: http://localhost:5174
+    depends_on:
+      - mongodb
+    networks:
+      - admin-network
+    volumes:
+      - ./backend/src:/app/src
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: admin-frontend
+    restart: unless-stopped
+    ports:
+      - "5174:80"
+    depends_on:
+      - backend
+    networks:
+      - admin-network
+    environment:
+      VITE_API_URL: http://localhost:5001/api
+
+networks:
+  admin-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local

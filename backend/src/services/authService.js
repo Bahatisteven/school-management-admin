@@ -39,17 +39,48 @@ class AuthService {
   }
 
   async login(email, password, deviceId, deviceName) {
+    console.log('Login attempt:', { email, deviceId, passwordLength: password?.length });
+    
     const user = await User.findOne({ email, isActive: true });
     if (!user) {
+      console.log('User not found or inactive');
       throw new UnauthorizedError('Invalid credentials');
     }
 
+    console.log('User found:', { email: user.email, role: user.role });
+
     const isPasswordValid = await user.comparePassword(password);
+    console.log('Password valid:', isPasswordValid);
+    
     if (!isPasswordValid) {
       throw new UnauthorizedError('Invalid credentials');
     }
 
     const existingDevice = user.deviceIds.find(d => d.deviceId === deviceId);
+    
+    if (user.role === 'admin') {
+      if (!existingDevice) {
+        user.deviceIds.push({
+          deviceId,
+          deviceName: deviceName || 'Unknown Device',
+          isVerified: true, // Auto-verify admin devices
+          verifiedAt: new Date(),
+        });
+        await user.save();
+      }
+      
+      user.lastLogin = new Date();
+      await user.save();
+
+      await notificationService.notifySuccessfulLogin(user._id, deviceName || 'Unknown Device');
+
+      const token = this.generateToken(user);
+      return {
+        success: true,
+        token,
+        user: UserDTO.toClient(user),
+      };
+    }
     
     if (!existingDevice) {
       user.deviceIds.push({
@@ -133,6 +164,14 @@ class AuthService {
           addedAt: d.addedAt,
         })),
     }));
+  }
+
+  generateToken(user) {
+    return jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.TOKEN_EXPIRY || '24h' }
+    );
   }
 }
 

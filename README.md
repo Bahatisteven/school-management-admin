@@ -131,21 +131,16 @@ CLIENT_URL=http://localhost:5174
 NODE_ENV=development
 ```
 
-5. Create admin user in MongoDB:
-```javascript
-// Connect to MongoDB and run:
-db.users.insertOne({
-  email: "admin@school.com",
-  password: "$2a$12$hashedPasswordHere", // Use bcrypt to hash password
-  firstName: "Admin",
-  lastName: "User",
-  role: "admin",
-  isActive: true,
-  deviceIds: [],
-  createdAt: new Date(),
-  updatedAt: new Date()
-});
+5. Create admin user:
+```bash
+# Run the setup script from backend directory
+node setup-admin.js
 ```
+
+This creates an admin user with:
+- **Email:** admin@school.com
+- **Password:** Admin@123
+- **Device ID:** admin-device-001
 
 6. Start the server:
 ```bash
