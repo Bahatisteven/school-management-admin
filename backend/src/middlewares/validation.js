@@ -1,4 +1,11 @@
 const { body, param, query, validationResult } = require('express-validator');
+const {
+  ROLES,
+  EXAM_TYPES,
+  ATTENDANCE_STATUS,
+  AMOUNT_LIMITS,
+  PAGINATION,
+} = require('../config/constants');
 
 const validate = (req, res, next) => {
   const errors = validationResult(req);
@@ -20,7 +27,7 @@ const registerValidation = [
     .withMessage('Password must contain uppercase, lowercase and number'),
   body('firstName').trim().notEmpty().isLength({ min: 2, max: 50 }).withMessage('First name is required (2-50 chars)'),
   body('lastName').trim().notEmpty().isLength({ min: 2, max: 50 }).withMessage('Last name is required (2-50 chars)'),
-  body('role').isIn(['student', 'parent']).withMessage('Invalid role'),
+  body('role').isIn([ROLES.STUDENT, ROLES.PARENT]).withMessage('Invalid role'),
   body('phoneNumber').optional().trim().matches(/^\+?[1-9]\d{1,14}$/).withMessage('Invalid phone number format'),
   body('dateOfBirth').optional().isISO8601().withMessage('Invalid date format'),
   validate,
@@ -36,8 +43,8 @@ const loginValidation = [
 
 const depositValidation = [
   body('amount')
-    .isFloat({ min: 100, max: 10000000 })
-    .withMessage('Amount must be between 100 and 10,000,000 RWF'),
+    .isFloat({ min: AMOUNT_LIMITS.MIN, max: AMOUNT_LIMITS.MAX })
+    .withMessage(`Amount must be between ${AMOUNT_LIMITS.MIN} and ${AMOUNT_LIMITS.MAX} RWF`),
   body('description').optional().trim().isLength({ max: 500 }).withMessage('Description too long'),
   body('childStudentId').optional().isMongoId().withMessage('Invalid student ID'),
   validate,
@@ -45,8 +52,8 @@ const depositValidation = [
 
 const withdrawValidation = [
   body('amount')
-    .isFloat({ min: 100, max: 10000000 })
-    .withMessage('Amount must be between 100 and 10,000,000 RWF'),
+    .isFloat({ min: AMOUNT_LIMITS.MIN, max: AMOUNT_LIMITS.MAX })
+    .withMessage(`Amount must be between ${AMOUNT_LIMITS.MIN} and ${AMOUNT_LIMITS.MAX} RWF`),
   body('description').optional().trim().isLength({ max: 500 }).withMessage('Description too long'),
   body('childStudentId').optional().isMongoId().withMessage('Invalid student ID'),
   validate,
@@ -57,7 +64,7 @@ const gradeValidation = [
   body('classId').isMongoId().withMessage('Valid class ID is required'),
   body('subject').trim().notEmpty().isLength({ min: 2, max: 100 }).withMessage('Subject is required'),
   body('score').isFloat({ min: 0, max: 100 }).withMessage('Score must be between 0 and 100'),
-  body('examType').isIn(['quiz', 'midterm', 'final', 'assignment']).withMessage('Invalid exam type'),
+  body('examType').isIn(Object.values(EXAM_TYPES)).withMessage('Invalid exam type'),
   body('term').isIn(['1', '2', '3']).withMessage('Invalid term'),
   body('academicYear').isInt({ min: 2000, max: 2100 }).withMessage('Invalid academic year'),
   body('remarks').optional().trim().isLength({ max: 500 }),
@@ -67,7 +74,7 @@ const gradeValidation = [
 const attendanceValidation = [
   body('studentId').isMongoId().withMessage('Valid student ID is required'),
   body('classId').isMongoId().withMessage('Valid class ID is required'),
-  body('status').isIn(['present', 'absent', 'late', 'excused']).withMessage('Invalid status'),
+  body('status').isIn(Object.values(ATTENDANCE_STATUS)).withMessage('Invalid status'),
   body('date').isISO8601().withMessage('Valid date is required'),
   body('remarks').optional().trim().isLength({ max: 500 }),
   validate,
@@ -126,7 +133,7 @@ const idValidation = [
 
 const paginationValidation = [
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
-  query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
+  query('limit').optional().isInt({ min: 1, max: PAGINATION.MAX_LIMIT }).withMessage(`Limit must be between 1 and ${PAGINATION.MAX_LIMIT}`),
   validate,
 ];
 
