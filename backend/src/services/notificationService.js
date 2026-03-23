@@ -1,4 +1,5 @@
 const Notification = require('../models/Notification');
+const { NOTIFICATION_TYPES } = require('../config/constants');
 const NotificationDTO = require('../dtos/NotificationDTO');
 
 class NotificationService {
