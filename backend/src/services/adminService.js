@@ -9,6 +9,7 @@ const StudentDTO = require('../dtos/StudentDTO');
 const TeacherDTO = require('../dtos/TeacherDTO');
 const ClassDTO = require('../dtos/ClassDTO');
 const { NotFoundError, ConflictError } = require('../utils/errors');
+const { PAGINATION, TRANSACTION_STATUS, TRANSACTION_TYPES } = require('../config/constants');
 
 class AdminService {
   async getDashboardStats() {
@@ -25,7 +26,7 @@ class AdminService {
       Class.countDocuments(),
       User.countDocuments({ 'deviceIds.isVerified': false }),
       FeeTransaction.aggregate([
-        { $match: { type: 'deposit', status: 'completed' } },
+        { $match: { type: TRANSACTION_TYPES.DEPOSIT, status: TRANSACTION_STATUS.COMPLETED } },
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
       FeeTransaction.find()
@@ -44,7 +45,7 @@ class AdminService {
     };
   }
 
-  async getAllStudents(page = 1, limit = 20, search = '') {
+  async getAllStudents(page = PAGINATION.DEFAULT_PAGE, limit = PAGINATION.DEFAULT_LIMIT, search = '') {
     const query = search
       ? {
           $or: [
@@ -73,7 +74,7 @@ class AdminService {
     };
   }
 
-  async getAllTeachers(page = 1, limit = 20) {
+  async getAllTeachers(page = PAGINATION.DEFAULT_PAGE, limit = PAGINATION.DEFAULT_LIMIT) {
     const teachers = await Teacher.find()
       .populate('userId', 'firstName lastName email phoneNumber')
       .populate('assignedClasses', 'name grade')
@@ -170,7 +171,7 @@ class AdminService {
     };
   }
 
-  async getAllFeeTransactions(page = 1, limit = 50, filters = {}) {
+  async getAllFeeTransactions(page = PAGINATION.DEFAULT_PAGE, limit = PAGINATION.TRANSACTION_LIMIT, filters = {}) {
     const query = {};
     if (filters.type) query.type = filters.type;
     if (filters.status) query.status = filters.status;
