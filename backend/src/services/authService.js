@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Student = require('../models/Student');
 const { generateStudentId } = require('../utils/helpers');
 const UserDTO = require('../dtos/UserDTO');
+const notificationService = require('./notificationService');
 const { ConflictError, UnauthorizedError, NotFoundError } = require('../utils/errors');
 
 class AuthService {
@@ -76,6 +77,8 @@ class AuthService {
     user.lastLogin = new Date();
     await user.save();
 
+    await notificationService.notifySuccessfulLogin(user._id, deviceName || 'Unknown Device');
+
     const token = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
@@ -109,6 +112,8 @@ class AuthService {
     device.verifiedBy = adminId;
 
     await user.save();
+
+    await notificationService.notifyDeviceVerified(user._id, device.deviceName);
 
     return UserDTO.toClientWithDevices(user);
   }

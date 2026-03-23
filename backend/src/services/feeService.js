@@ -1,7 +1,10 @@
 const Student = require('../models/Student');
 const FeeTransaction = require('../models/FeeTransaction');
 const FeeTransactionDTO = require('../dtos/FeeTransactionDTO');
+const notificationService = require('./notificationService');
 const { NotFoundError, InsufficientBalanceError, ValidationError } = require('../utils/errors');
+
+const LOW_BALANCE_THRESHOLD = 50000;
 
 class FeeService {
   async deposit(studentId, amount, description, processedBy) {
@@ -9,7 +12,7 @@ class FeeService {
       throw new ValidationError('Amount must be greater than zero');
     }
 
-    const student = await Student.findById(studentId);
+    const student = await Student.findById(studentId).populate('userId');
     if (!student) {
       throw new NotFoundError('Student');
     }
@@ -30,6 +33,14 @@ class FeeService {
 
     await transaction.save();
 
+    if (student.userId) {
+      await notificationService.notifyPaymentConfirmed(
+        student.userId._id,
+        amount,
+        balanceAfter
+      );
+    }
+
     return {
       transaction: FeeTransactionDTO.toClient(transaction),
       newBalance: balanceAfter,
@@ -41,7 +52,7 @@ class FeeService {
       throw new ValidationError('Amount must be greater than zero');
     }
 
-    const student = await Student.findById(studentId);
+    const student = await Student.findById(studentId).populate('userId');
     if (!student) {
       throw new NotFoundError('Student');
     }
@@ -68,6 +79,18 @@ class FeeService {
 
     await transaction.save();
 
+    if (student.userId) {
+      await notificationService.notifyRefundProcessed(
+        student.userId._id,
+        amount,
+        balanceAfter
+      );
+
+      if (balanceAfter < LOW_BALANCE_THRESHOLD) {
+        await notificationService.notifyLowBalance(student.userId._id, balanceAfter);
+      }
+    }
+
     return {
       transaction: FeeTransactionDTO.toClient(transaction),
       newBalance: balanceAfter,
@@ -75,14 +98,28 @@ class FeeService {
   }
 
   async getBalance(studentId) {
-    const student = await Student.findById(studentId);
+    const student = await Student.findById(studentId).populate('userId');
     if (!student) {
       throw new NotFoundError('Student');
+    }
+
+    if (student.userId && student.feeBalance < LOW_BALANCE_THRESHOLD) {
+      const recentNotification = await require('../models/Notification').findOne({
+        userId: student.userId._id,
+        type: 'low_balance',
+        createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+      });
+
+      if (!recentNotification) {
+        await notificationService.notifyLowBalance(student.userId._id, student.feeBalance);
+      }
     }
 
     return {
       balance: student.feeBalance,
       studentId: student.studentId,
+      isLowBalance: student.feeBalance < LOW_BALANCE_THRESHOLD,
+      threshold: LOW_BALANCE_THRESHOLD,
     };
   }
 

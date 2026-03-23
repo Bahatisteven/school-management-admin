@@ -6,6 +6,7 @@ router.use('/admin', require('./adminRoutes'));
 router.use('/fees', require('./feeRoutes'));
 router.use('/academic', require('./academicRoutes'));
 router.use('/students', require('./studentRoutes'));
+router.use('/notifications', require('./notificationRoutes'));
 
 router.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
