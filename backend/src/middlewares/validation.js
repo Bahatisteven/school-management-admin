@@ -109,7 +109,7 @@ const assignTeacherValidation = [
 const assignStudentValidation = [
   body('studentId').isMongoId().withMessage('Valid student ID is required'),
   body('classId')
-    .if((value) => value !== '' && value !== null && value !== undefined)
+    .optional({ values: 'falsy' })
     .isMongoId()
     .withMessage('Invalid class ID format'),
   validate,

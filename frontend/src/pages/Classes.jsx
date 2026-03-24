@@ -75,17 +75,24 @@ function Classes() {
   };
 
   const handleAssignTeacher = async () => {
-    if (!selectedClass || !selectedTeacher) return;
+    if (!selectedClass || !selectedTeacher) {
+      alert('Please select a teacher');
+      return;
+    }
     
     try {
-      await adminService.assignTeacher(selectedTeacher, selectedClass._id);
+      const result = await adminService.assignTeacher(selectedTeacher, selectedClass._id);
+      alert('Teacher assigned successfully!');
       setSuccess('Teacher assigned successfully!');
       setShowTeacherAssign(false);
       setSelectedClass(null);
       setSelectedTeacher('');
       loadClasses();
     } catch (err) {
-      setError(err.response?.data?.error || 'Error assigning teacher');
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Error assigning teacher';
+      alert('Error: ' + errorMsg);
+      setError(errorMsg);
+      console.error('Assign teacher error:', err.response?.data);
     }
   };
 

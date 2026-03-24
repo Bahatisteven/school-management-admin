@@ -44,7 +44,7 @@ function Students() {
     
     setAssignLoading(true);
     try {
-      await adminService.assignStudentToClass(
+      const result = await adminService.assignStudentToClass(
         assigningStudent._id,
         selectedClass || null
       );
@@ -53,7 +53,9 @@ function Students() {
       setSelectedClass('');
       loadStudents(pagination?.page || 1);
     } catch (error) {
-      alert(error.response?.data?.error || 'Failed to assign student to class');
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to assign student to class';
+      console.error('Assign student error:', error.response?.data);
+      alert('Error: ' + errorMsg);
     } finally {
       setAssignLoading(false);
     }
