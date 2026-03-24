@@ -109,13 +109,9 @@ const assignTeacherValidation = [
 const assignStudentValidation = [
   body('studentId').isMongoId().withMessage('Valid student ID is required'),
   body('classId')
-    .custom((value) => {
-      // Allow null, undefined, or empty string for removal
-      if (!value || value === '' || value === null) return true;
-      // Validate MongoDB ObjectId format
-      if (/^[0-9a-fA-F]{24}$/.test(value)) return true;
-      throw new Error('Invalid class ID format');
-    }),
+    .if((value) => value !== '' && value !== null && value !== undefined)
+    .isMongoId()
+    .withMessage('Invalid class ID format'),
   validate,
 ];
 

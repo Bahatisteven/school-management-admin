@@ -4,7 +4,12 @@ import { adminService } from '../services';
 
 function Classes() {
   const [classes, setClasses] = useState([]);
+  const [teachers, setTeachers] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [showTeacherAssign, setShowTeacherAssign] = useState(false);
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [selectedClass, setSelectedClass] = useState(null);
+  const [selectedTeacher, setSelectedTeacher] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     grade: '',
@@ -12,13 +17,29 @@ function Classes() {
     academicYear: new Date().getFullYear().toString(),
     capacity: 30,
   });
+  const [scheduleData, setScheduleData] = useState({
+    day: 'Monday',
+    subject: '',
+    startTime: '',
+    endTime: '',
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
     loadClasses();
+    loadTeachers();
   }, []);
+
+  const loadTeachers = async () => {
+    try {
+      const response = await adminService.getTeachers();
+      setTeachers(response.data.teachers);
+    } catch (error) {
+      console.error('Error loading teachers:', error);
+    }
+  };
 
   const loadClasses = async () => {
     try {
@@ -50,6 +71,42 @@ function Classes() {
       loadClasses();
     } catch (err) {
       setError(err.response?.data?.error || 'Error creating class');
+    }
+  };
+
+  const handleAssignTeacher = async () => {
+    if (!selectedClass || !selectedTeacher) return;
+    
+    try {
+      await adminService.assignTeacher(selectedTeacher, selectedClass._id);
+      setSuccess('Teacher assigned successfully!');
+      setShowTeacherAssign(false);
+      setSelectedClass(null);
+      setSelectedTeacher('');
+      loadClasses();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error assigning teacher');
+    }
+  };
+
+  const handleAddSchedule = async (e) => {
+    e.preventDefault();
+    if (!selectedClass) return;
+
+    try {
+      const updatedSchedule = [...(selectedClass.schedule || []), {
+        ...scheduleData,
+        teacherId: selectedClass.teacherId?._id || null
+      }];
+      
+      await adminService.updateClass(selectedClass._id, { schedule: updatedSchedule });
+      setSuccess('Schedule added successfully!');
+      setScheduleData({ day: 'Monday', subject: '', startTime: '', endTime: '' });
+      setShowScheduleForm(false);
+      setSelectedClass(null);
+      loadClasses();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error adding schedule');
     }
   };
 
@@ -141,6 +198,32 @@ function Classes() {
                   {cls.teacherId && (
                     <p><strong>Teacher:</strong> {cls.teacherId.firstName} {cls.teacherId.lastName}</p>
                   )}
+                  {cls.schedule && cls.schedule.length > 0 && (
+                    <p><strong>Schedule:</strong> {cls.schedule.length} slots</p>
+                  )}
+                  <div style={{ marginTop: '15px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button
+                      className="btn btn-primary"
+                      style={{ fontSize: '12px', padding: '5px 10px' }}
+                      onClick={() => {
+                        setSelectedClass(cls);
+                        setSelectedTeacher(cls.teacherId?._id || '');
+                        setShowTeacherAssign(true);
+                      }}
+                    >
+                      Assign Teacher
+                    </button>
+                    <button
+                      className="btn btn-secondary"
+                      style={{ fontSize: '12px', padding: '5px 10px' }}
+                      onClick={() => {
+                        setSelectedClass(cls);
+                        setShowScheduleForm(true);
+                      }}
+                    >
+                      Add Schedule
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -148,6 +231,152 @@ function Classes() {
             <p style={{ marginTop: '20px' }}>No classes found</p>
           )}
         </div>
+
+        {/* Assign Teacher Modal */}
+        {showTeacherAssign && selectedClass && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}>
+            <div className="card" style={{ maxWidth: '500px', width: '90%' }}>
+              <h3>Assign Teacher to {selectedClass.name}</h3>
+              
+              <div className="form-group" style={{ marginTop: '20px' }}>
+                <label>Select Teacher:</label>
+                <select
+                  value={selectedTeacher}
+                  onChange={(e) => setSelectedTeacher(e.target.value)}
+                  style={{ width: '100%', padding: '10px', marginTop: '5px' }}
+                >
+                  <option value="">-- Select Teacher --</option>
+                  {teachers.map((teacher) => (
+                    <option key={teacher._id} value={teacher._id}>
+                      {teacher.userId?.firstName} {teacher.userId?.lastName} - {teacher.subjects?.join(', ')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => {
+                    setShowTeacherAssign(false);
+                    setSelectedClass(null);
+                    setSelectedTeacher('');
+                  }}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAssignTeacher}
+                  className="btn btn-primary"
+                  disabled={!selectedTeacher}
+                >
+                  Assign
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Schedule Modal */}
+        {showScheduleForm && selectedClass && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}>
+            <div className="card" style={{ maxWidth: '500px', width: '90%' }}>
+              <h3>Add Schedule to {selectedClass.name}</h3>
+              
+              <form onSubmit={handleAddSchedule} style={{ marginTop: '20px' }}>
+                <div className="form-group">
+                  <label>Day:</label>
+                  <select
+                    value={scheduleData.day}
+                    onChange={(e) => setScheduleData({ ...scheduleData, day: e.target.value })}
+                    style={{ width: '100%', padding: '10px', marginTop: '5px' }}
+                    required
+                  >
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                    <option value="Friday">Friday</option>
+                  </select>
+                </div>
+
+                <div className="form-group" style={{ marginTop: '10px' }}>
+                  <label>Subject:</label>
+                  <input
+                    type="text"
+                    value={scheduleData.subject}
+                    onChange={(e) => setScheduleData({ ...scheduleData, subject: e.target.value })}
+                    style={{ width: '100%', padding: '10px', marginTop: '5px' }}
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-2" style={{ marginTop: '10px', gap: '10px' }}>
+                  <div className="form-group">
+                    <label>Start Time:</label>
+                    <input
+                      type="time"
+                      value={scheduleData.startTime}
+                      onChange={(e) => setScheduleData({ ...scheduleData, startTime: e.target.value })}
+                      style={{ width: '100%', padding: '10px', marginTop: '5px' }}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>End Time:</label>
+                    <input
+                      type="time"
+                      value={scheduleData.endTime}
+                      onChange={(e) => setScheduleData({ ...scheduleData, endTime: e.target.value })}
+                      style={{ width: '100%', padding: '10px', marginTop: '5px' }}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowScheduleForm(false);
+                      setSelectedClass(null);
+                      setScheduleData({ day: 'Monday', subject: '', startTime: '', endTime: '' });
+                    }}
+                    className="btn btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    Add Schedule
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
