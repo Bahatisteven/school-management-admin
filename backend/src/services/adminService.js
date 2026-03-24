@@ -180,19 +180,22 @@ class AdminService {
       throw new NotFoundError('Student');
     }
 
-    if (classId) {
-      const classDoc = await Class.findById(classId);
+    // Normalize empty string to null
+    const normalizedClassId = classId && classId !== '' ? classId : null;
+
+    if (normalizedClassId) {
+      const classDoc = await Class.findById(normalizedClassId);
       if (!classDoc) {
         throw new NotFoundError('Class');
       }
 
-      const currentClassStudents = await Student.countDocuments({ classId });
+      const currentClassStudents = await Student.countDocuments({ classId: normalizedClassId });
       if (currentClassStudents >= classDoc.capacity) {
         throw new ConflictError('Class has reached maximum capacity');
       }
     }
 
-    student.classId = classId || null;
+    student.classId = normalizedClassId;
     await student.save();
 
     const populatedStudent = await Student.findById(studentId)
@@ -201,7 +204,7 @@ class AdminService {
 
     return {
       student: StudentDTO.toClient(populatedStudent, populatedStudent.userId),
-      message: classId ? 'Student assigned to class successfully' : 'Student removed from class successfully',
+      message: normalizedClassId ? 'Student assigned to class successfully' : 'Student removed from class successfully',
     };
   }
 
