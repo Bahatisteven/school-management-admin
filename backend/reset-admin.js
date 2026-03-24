@@ -4,27 +4,23 @@ const User = require('./src/models/User');
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/school_management';
 
-async function setupAdmin() {
+async function resetAdmin() {
   try {
     await mongoose.connect(MONGODB_URI);
     console.log('Connected to MongoDB');
 
-    const existingAdmin = await User.findOne({ email: 'admin@school.com' });
-    
-    if (existingAdmin) {
-      console.log('Admin user already exists!');
-      console.log('Email: admin@school.com');
-      console.log('Password: Admin@123');
-      console.log('\nTo reset the password, run: node reset-admin.js');
-      process.exit(0);
+    // delete existing admin
+    const deleted = await User.deleteOne({ email: 'admin@school.com' });
+    if (deleted.deletedCount > 0) {
+      console.log('Existing admin user deleted');
     }
 
-    // create admin
+    // creat fresh admin
     const password = 'Admin@123';
 
     const admin = new User({
       email: 'admin@school.com',
-      password: password,
+      password: password,  
       firstName: 'System',
       lastName: 'Administrator',
       role: 'admin',
@@ -33,6 +29,7 @@ async function setupAdmin() {
         deviceId: 'admin-device-001',
         deviceName: 'Admin Workstation',
         isVerified: true,
+        verifiedAt: new Date(),
         addedAt: new Date(),
       }],
       isActive: true,
@@ -40,13 +37,22 @@ async function setupAdmin() {
 
     await admin.save();
 
-    console.log('\nAdmin user created successfully!\n');
+    console.log('\n Admin user reset successfully!\n');
     console.log('Login Credentials:');
     console.log('==================');
     console.log('Email:     admin@school.com');
     console.log('Password:  Admin@123');
     console.log('Device ID: admin-device-001');
     console.log('\nYou can now login to the admin dashboard.\n');
+
+    const testAdmin = await User.findOne({ email: 'admin@school.com' });
+    const isValid = await testAdmin.comparePassword('Admin@123');
+    
+    if (isValid) {
+      console.log(' Password verification successful!');
+    } else {
+      console.log(' Password verification failed - something is wrong!');
+    }
 
     process.exit(0);
   } catch (error) {
@@ -55,4 +61,4 @@ async function setupAdmin() {
   }
 }
 
-setupAdmin();
+resetAdmin();
