@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 const User = require('./src/models/User');
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/school_management';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/school_management_shared_shared';
 
 async function resetAdmin() {
   try {
