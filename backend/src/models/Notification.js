@@ -10,8 +10,8 @@ const notificationSchema = new mongoose.Schema({
   type: {
     type: String,
     enum: [
-      'payment_confirmation',
-      'refund_status',
+      'payment_confirmed',
+      'refund_processed',
       'low_balance',
       'device_verified',
       'login_success',

@@ -16,7 +16,7 @@ function Fees() {
       const response = await adminService.getFeeTransactions(1, filters);
       setTransactions(response.data.transactions);
     } catch (error) {
-      console.error('Error loading transactions:', error);
+      setError('Failed to load transactions');
     } finally {
       setLoading(false);
     }

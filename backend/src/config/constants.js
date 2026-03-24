@@ -32,6 +32,8 @@ module.exports = {
     LOW_BALANCE: 'low_balance',
     DEVICE_VERIFIED: 'device_verified',
     LOGIN_SUCCESS: 'login_success',
+    GRADE_ADDED: 'grade_added',
+    ATTENDANCE_MARKED: 'attendance_marked',
   },
   TOKEN_EXPIRY: '24h',
   PASSWORD_HASH_ROUNDS: 12,

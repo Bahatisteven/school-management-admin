@@ -39,19 +39,13 @@ class AuthService {
   }
 
   async login(email, password, deviceId, deviceName) {
-    console.log('Login attempt:', { email, deviceId, passwordLength: password?.length });
-    
     // Find user by email (don't filter by isActive yet to give better feedback)
     const user = await User.findOne({ email });
     if (!user) {
-      console.log('User not found');
       throw new UnauthorizedError('Invalid credentials');
     }
 
-    console.log('User found:', { email: user.email, role: user.role, isActive: user.isActive });
-
     const isPasswordValid = await user.comparePassword(password);
-    console.log('Password valid:', isPasswordValid);
     
     if (!isPasswordValid) {
       throw new UnauthorizedError('Invalid credentials');
@@ -59,7 +53,6 @@ class AuthService {
 
     // Check if account is active
     if (!user.isActive) {
-      console.log('User account is inactive/pending approval');
       return {
         success: false,
         message: 'Your account is currently pending administrator approval.',

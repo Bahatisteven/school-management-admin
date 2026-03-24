@@ -236,7 +236,7 @@ function Dashboard() {
             </div>
           </div>
 
-          <div className="card mt-6">
+          <div className="card mt-12">
             <div className="chart-header">
               <h2 className="chart-title">My Assigned Classes</h2>
               <p className="chart-subtitle">Direct management of your school groups</p>

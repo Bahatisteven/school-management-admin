@@ -68,11 +68,6 @@ class AdminService {
       const assignedClassIds = assignedClasses.map(c => c._id);
       const studentsCount = await Student.countDocuments({ classId: { $in: assignedClassIds } });
 
-      console.log(`Teacher Dashboard Debug [${teacher.teacherId}]:`);
-      console.log(`- Teacher Profile ID: ${teacher._id}`);
-      console.log(`- Found ${assignedClasses.length} Classes`);
-      console.log(`- Found ${studentsCount} Students in those classes`);
-
       return {
         totalStudents: studentsCount,
         totalClasses: assignedClasses.length,
@@ -95,12 +90,9 @@ class AdminService {
     if (user && user.role === 'teacher') {
       const teacher = await Teacher.findOne({ userId: user._id || user.id });
       if (teacher) {
-        console.log('Fetching students for teacher:', teacher.teacherId);
         const teacherClasses = await Class.find({ teacherId: teacher._id }).distinct('_id');
-        console.log('Teacher assigned to classes:', teacherClasses);
         query.classId = { $in: teacherClasses };
       } else {
-        console.log('No teacher profile found for user:', user._id || user.id);
         return { students: [], pagination: { page, limit, total: 0, pages: 0 } };
       }
     }
@@ -215,13 +207,10 @@ class AdminService {
     
     if (user && user.role === 'teacher') {
       const userId = user._id || user.id;
-      console.log('Fetching classes for teacher userId:', userId);
       const teacher = await Teacher.findOne({ userId });
       if (teacher) {
-        console.log('Found teacher profile:', teacher.teacherId);
         query.teacherId = teacher._id;
       } else {
-        console.log('Teacher profile NOT FOUND for userId:', userId);
         return [];
       }
     }
@@ -276,31 +265,23 @@ class AdminService {
   }
 
   async assignTeacherToClass(teacherId, classId) {
-    console.log(`Assignment Attempt: Teacher[${teacherId}] to Class[${classId}]`);
-    
     const teacher = await Teacher.findById(teacherId);
     if (!teacher) {
-      console.error('Assignment Error: Teacher not found for ID', teacherId);
       throw new NotFoundError('Teacher');
     }
 
     const classDoc = await Class.findById(classId);
     if (!classDoc) {
-      console.error('Assignment Error: Class not found for ID', classId);
       throw new NotFoundError('Class');
     }
 
-    // Ensure teacher record has this class in its list
     if (!teacher.assignedClasses.includes(classId)) {
       teacher.assignedClasses.push(classId);
       await teacher.save();
     }
 
-    // Ensure class record has this teacher ID
     classDoc.teacherId = teacher._id;
     await classDoc.save();
-
-    console.log(`Successfully assigned ${teacher.teacherId} to class ${classDoc.name}`);
 
     const populatedTeacher = await Teacher.findById(teacher._id)
       .populate('userId', 'firstName lastName email phoneNumber')
