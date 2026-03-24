@@ -41,13 +41,14 @@ class AuthService {
   async login(email, password, deviceId, deviceName) {
     console.log('Login attempt:', { email, deviceId, passwordLength: password?.length });
     
-    const user = await User.findOne({ email, isActive: true });
+    // Find user by email (don't filter by isActive yet to give better feedback)
+    const user = await User.findOne({ email });
     if (!user) {
-      console.log('User not found or inactive');
+      console.log('User not found');
       throw new UnauthorizedError('Invalid credentials');
     }
 
-    console.log('User found:', { email: user.email, role: user.role });
+    console.log('User found:', { email: user.email, role: user.role, isActive: user.isActive });
 
     const isPasswordValid = await user.comparePassword(password);
     console.log('Password valid:', isPasswordValid);
@@ -56,10 +57,20 @@ class AuthService {
       throw new UnauthorizedError('Invalid credentials');
     }
 
+    // Check if account is active
+    if (!user.isActive) {
+      console.log('User account is inactive/pending approval');
+      return {
+        success: false,
+        message: 'Your account is currently pending administrator approval.',
+        requiresVerification: true, // Use this to trigger the same UI feedback as device verification
+      };
+    }
+
     const existingDevice = user.deviceIds.find(d => d.deviceId === deviceId);
     
+    // restrict techers
     if (user.role === 'admin') {
-      // Auto-verify admin devices - admins don't need approval
       if (!existingDevice) {
         user.deviceIds.push({
           deviceId,
@@ -67,12 +78,9 @@ class AuthService {
           isVerified: true,
           verifiedAt: new Date(),
         });
-        await user.save();
       } else if (!existingDevice.isVerified) {
-        // auto-verify it for admins
         existingDevice.isVerified = true;
         existingDevice.verifiedAt = new Date();
-        await user.save();
       }
       
       user.lastLogin = new Date();
@@ -88,6 +96,7 @@ class AuthService {
       };
     }
     
+    // for teachers, students..
     if (!existingDevice) {
       user.deviceIds.push({
         deviceId,
@@ -98,7 +107,7 @@ class AuthService {
       
       return {
         success: false,
-        message: 'Device needs verification. Please wait for admin approval.',
+        message: 'Your device is not registered. Please wait for administrator approval.',
         requiresVerification: true,
       };
     }
@@ -106,7 +115,7 @@ class AuthService {
     if (!existingDevice.isVerified) {
       return {
         success: false,
-        message: 'Device is pending verification by administrator.',
+        message: 'Your device is pending verification. Please contact the administrator.',
         requiresVerification: true,
       };
     }
@@ -158,7 +167,7 @@ class AuthService {
   async getPendingVerifications() {
     const users = await User.find({
       'deviceIds.isVerified': false,
-      role: { $ne: 'admin' } // Exclude admins - they auto-verify
+      role: { $ne: 'admin' }
     }).select('-password');
 
     return users.map(user => ({

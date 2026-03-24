@@ -1,26 +1,37 @@
 class TeacherDTO {
   static toClient(teacher) {
-    return {
+    if (!teacher) return null;
+    
+    const user = teacher.userId;
+    const dto = {
       id: teacher._id,
-      employeeId: teacher.employeeId,
-      user: teacher.userId ? {
-        id: teacher.userId._id || teacher.userId,
-        firstName: teacher.userId.firstName,
-        lastName: teacher.userId.lastName,
-        email: teacher.userId.email,
-        phoneNumber: teacher.userId.phoneNumber,
-      } : null,
-      subject: teacher.subject,
+      _id: teacher._id, // For compatibility
+      teacherId: teacher.teacherId,
+      subjects: teacher.subjects || [],
       qualification: teacher.qualification,
+      hireDate: teacher.hireDate,
       assignedClasses: teacher.assignedClasses?.map(cls => 
         cls._id ? {
           id: cls._id,
+          _id: cls._id,
           name: cls.name,
           grade: cls.grade,
         } : cls
       ) || [],
-      joinDate: teacher.joinDate,
     };
+
+    if (user) {
+      dto.userId = {
+        id: user._id || user,
+        _id: user._id || user,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+      };
+    }
+
+    return dto;
   }
 
   static toClientList(teachers) {

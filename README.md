@@ -1,55 +1,166 @@
 # School Management System - Admin Application
 
-Comprehensive admin panel for managing students, teachers, classes, fees, and device verifications in the school management system.
+A full-stack administrative web application for managing school operations including students, teachers, classes, fees, and academic records. Built with Node.js, Express, React, and MongoDB with enterprise-grade security.
 
-## Features
+## Overview
 
-### Dashboard
-- Total students, teachers, and classes statistics
-- Pending device verifications count
-- Total fees collected
+This admin application provides centralized control over the school management system. Administrators can manage users, verify devices, oversee academic records, monitor fee transactions, and generate reports through an intuitive dashboard interface.
+
+## Core Features
+
+**Dashboard Analytics**
+- Real-time statistics (students, teachers, classes, fees)
+- Pending device verification alerts
 - Recent transaction history
 
-### User Management
-- View all students with detailed information
-- View all teachers and their assignments
-- Verify user devices for system access
-- Manage user roles and permissions
+**User Management**
+- View and search all students and teachers
+- Paginated data views with filtering
+- Device verification approval workflow
 
-### Class Management
-- Create new classes
-- Update class information
-- Delete classes
+**Class Management**
+- Create, update, and delete classes
 - Assign teachers to classes
-- View class schedules
+- Manage class schedules and capacity
 
-### Fee Management
-- View all fee transactions
+**Fee Administration**
+- Monitor all fee transactions (deposits/withdrawals)
 - Filter by transaction type and status
-- Monitor student fee balances
-- Track payment history
+- Track student balances
 
-### Device Verification
-- Review pending device verification requests
+**Academic Oversight**
+- View student grades and attendance
+- Generate attendance reports by date range
+- Filter academic data by class
+
+**Device Verification**
+- Review pending device requests
 - Approve or reject device access
-- Track device registration history
+- Full device registration audit trail
 
 ## Tech Stack
 
-### Backend
-- Node.js & Express.js
-- MongoDB & Mongoose
-- JWT authentication
-- bcryptjs for password hashing
-- express-validator for input validation
-- Helmet for security
-- express-rate-limit for rate limiting
+**Backend**
+- Node.js v16+ with Express.js v5.2.1
+- MongoDB v7.0 with Mongoose ODM
+- JWT authentication with device verification
+- Password security: SHA-512 pre-hash + bcrypt (12 rounds)
+- Validation: express-validator, Joi
+- Security: Helmet, express-rate-limit, mongo-sanitize, hpp
+- API Documentation: Swagger UI
 
-### Frontend
-- React.js with Vite
-- React Router for navigation
-- Axios for API calls
+**Frontend**
+- React v19.2.4 with Vite v8.0.1
+- React Router v7.13.1
+- Axios for HTTP requests
 - Context API for state management
+- Recharts for data visualization
+- Custom CSS styling
+
+**DevOps**
+- Docker & Docker Compose
+- Nginx for production
+- MongoDB 7.0 containerized
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js v16+
+- MongoDB v5+
+- npm or yarn
+
+### Local Development
+
+1. **Backend Setup**
+```bash
+cd backend
+npm install
+cp .env.example .env
+# Configure .env with your settings
+npm run dev
+```
+
+Backend runs on http://localhost:5001
+
+2. **Frontend Setup**
+```bash
+cd frontend
+npm install
+cp .env.example .env
+# Set VITE_API_URL=http://localhost:5001/api
+npm run dev
+```
+
+Frontend runs on http://localhost:5174
+
+3. **Create Admin User**
+```bash
+cd backend
+node setup-admin.js
+```
+
+Default credentials:
+- Email: admin@school.com
+- Password: Admin@123
+
+### Docker Deployment
+
+```bash
+# Create .env file with required variables
+docker-compose up -d
+
+# Create admin user
+docker exec -it admin-backend node setup-admin.js
+```
+
+Services:
+- Frontend: http://localhost:5174
+- Backend: http://localhost:5001
+- MongoDB: port 27017
+
+## Environment Variables
+
+**Backend (.env)**
+```env
+PORT=5001
+MONGODB_URI=mongodb://localhost:27017/school_management_shared
+JWT_SECRET=your_secure_secret_key_minimum_32_chars
+TOKEN_EXPIRY=24h
+CLIENT_URL=http://localhost:5174
+NODE_ENV=development
+```
+
+**Frontend (.env)**
+```env
+VITE_API_URL=http://localhost:5001/api
+```
+
+## API Endpoints
+
+**Authentication**
+- `POST /api/auth/login` - Admin login
+- `POST /api/auth/logout` - Logout
+- `GET /api/auth/me` - Get profile
+
+**Admin Operations**
+- `GET /api/admin/dashboard` - Dashboard stats
+- `GET /api/admin/students` - List students (paginated)
+- `GET /api/admin/teachers` - List teachers
+- `GET /api/admin/classes` - List classes
+- `POST /api/admin/classes` - Create class
+- `PUT /api/admin/classes/:id` - Update class
+- `DELETE /api/admin/classes/:id` - Delete class
+- `POST /api/admin/assign-teacher` - Assign teacher
+- `GET /api/admin/fee-transactions` - List transactions
+- `GET /api/admin/pending-verifications` - Pending devices
+- `POST /api/admin/verify-device` - Verify device
+
+All endpoints require:
+- Authorization: Bearer {token}
+- X-Device-ID: {device-id}
+
+API Documentation: http://localhost:5001/api-docs
 
 ## Project Structure
 
@@ -57,323 +168,137 @@ Comprehensive admin panel for managing students, teachers, classes, fees, and de
 school-management-admin/
 ├── backend/
 │   ├── src/
-│   │   ├── config/
-│   │   ├── models/
-│   │   ├── controllers/
-│   │   │   └── adminController.js    # Admin-specific operations
-│   │   ├── services/
-│   │   │   └── adminService.js       # Admin business logic
-│   │   ├── routes/
-│   │   │   └── adminRoutes.js        # Admin API routes
-│   │   ├── middlewares/
-│   │   ├── dtos/
-│   │   ├── utils/
-│   │   └── server.js
-│   ├── .env.example
+│   │   ├── config/         # Database & constants
+│   │   ├── models/         # Mongoose schemas
+│   │   ├── controllers/    # Request handlers
+│   │   ├── services/       # Business logic
+│   │   ├── routes/         # API routes
+│   │   ├── middlewares/    # Auth, validation, errors
+│   │   ├── dtos/           # Data transfer objects
+│   │   └── utils/          # Helper functions
+│   ├── setup-admin.js      # Admin creation script
+│   ├── Dockerfile
 │   └── package.json
-│
-└── frontend/
-    ├── src/
-    │   ├── components/
-    │   │   └── Navbar.jsx
-    │   ├── pages/
-    │   │   ├── Login.jsx
-    │   │   ├── Dashboard.jsx
-    │   │   ├── Students.jsx
-    │   │   ├── Teachers.jsx
-    │   │   ├── Classes.jsx
-    │   │   ├── Fees.jsx
-    │   │   └── Verifications.jsx
-    │   ├── services/
-    │   │   ├── api.js
-    │   │   └── index.js
-    │   ├── utils/
-    │   │   └── AuthContext.jsx
-    │   ├── styles/
-    │   ├── App.jsx
-    │   └── main.jsx
-    ├── index.html
-    ├── vite.config.js
-    └── package.json
+├── frontend/
+│   ├── src/
+│   │   ├── components/     # Reusable components
+│   │   ├── pages/          # Page components
+│   │   ├── services/       # API services
+│   │   ├── utils/          # Auth context
+│   │   └── styles/         # CSS files
+│   ├── Dockerfile
+│   └── package.json
+└── docker-compose.yml
 ```
-
-## Setup Instructions
-
-### Prerequisites
-- Node.js (v16 or higher)
-- MongoDB (v5 or higher)
-- Admin user account in database
-
-### Backend Setup
-
-1. Navigate to backend directory:
-```bash
-cd backend
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Create `.env` file:
-```bash
-cp .env.example .env
-```
-
-4. Configure `.env`:
-```env
-PORT=5001
-MONGODB_URI=mongodb://localhost:27017/school_management_admin
-JWT_SECRET=your_secure_jwt_secret_key_for_admin
-TOKEN_EXPIRY=24h
-CLIENT_URL=http://localhost:5174
-NODE_ENV=development
-```
-
-5. Create admin user:
-```bash
-# Run the setup script from backend directory
-node setup-admin.js
-```
-
-This creates an admin user with:
-- **Email:** admin@school.com
-- **Password:** Admin@123
-- **Device ID:** admin-device-001
-
-6. Start the server:
-```bash
-npm run dev
-```
-
-Backend runs on `http://localhost:5001`
-
-### Frontend Setup
-
-1. Navigate to frontend directory:
-```bash
-cd frontend
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Create `.env` file:
-```bash
-cp .env.example .env
-```
-
-4. Configure `.env`:
-```env
-VITE_API_URL=http://localhost:5001/api
-```
-
-5. Start development server:
-```bash
-npm run dev
-```
-
-Frontend runs on `http://localhost:5174`
-
-6. Build for production:
-```bash
-npm run build
-```
-
-## Admin API Endpoints
-
-### Dashboard
-- `GET /api/admin/dashboard` - Get dashboard statistics
-
-### Student Management
-- `GET /api/admin/students?page=1&search=` - Get all students (paginated)
-
-### Teacher Management
-- `GET /api/admin/teachers?page=1` - Get all teachers (paginated)
-
-### Class Management
-- `GET /api/admin/classes` - Get all classes
-- `POST /api/admin/classes` - Create new class
-- `PUT /api/admin/classes/:id` - Update class
-- `DELETE /api/admin/classes/:id` - Delete class
-- `POST /api/admin/assign-teacher` - Assign teacher to class
-
-### Fee Management
-- `GET /api/admin/fee-transactions?page=1&type=&status=` - Get all transactions
-
-### Attendance Reports
-- `GET /api/admin/attendance-report?classId=&startDate=&endDate=` - Get attendance report
-
-### Device Verification
-- `GET /api/admin/pending-verifications` - Get pending device verifications
-- `POST /api/admin/verify-device` - Verify user device
-
-## Usage
-
-### First Time Setup
-
-1. Start MongoDB
-2. Start backend server
-3. Create admin user in database
-4. Start frontend
-5. Login with admin credentials
-
-### Creating a Class
-
-1. Navigate to "Classes" page
-2. Click "Create New Class"
-3. Fill in class details:
-   - Name (e.g., "Grade 5A")
-   - Grade (e.g., "5")
-   - Section (optional)
-   - Academic Year
-   - Capacity
-4. Click "Create Class"
-
-### Verifying User Devices
-
-1. Navigate to "Verifications" page
-2. Review pending device requests
-3. Check user details and device information
-4. Click "Verify" to approve device access
-5. User can now login from verified device
-
-### Managing Students
-
-1. Navigate to "Students" page
-2. View all registered students
-3. Search by Student ID
-4. View student details:
-   - Personal information
-   - Assigned class
-   - Fee balance
-5. Pagination available for large datasets
-
-### Monitoring Fees
-
-1. Navigate to "Fees" page
-2. View all fee transactions
-3. Filter by:
-   - Transaction type (deposit/withdraw)
-   - Status (completed/pending/rejected)
-4. Monitor payment patterns
 
 ## Security Features
 
-- Admin-only access (role-based authorization)
-- JWT authentication required for all endpoints
-- Device ID verification for all users
-- Secure password storage (bcrypt)
-- Rate limiting on API endpoints
-- CORS protection
-- Helmet security headers
-- Input validation and sanitization
-
-## Key Assumptions
-
-1. Admin users must be created directly in database
-2. All API endpoints require authentication
-3. Device verification applies to all users including admins
-4. Classes are uniquely identified by name
-5. One teacher can be assigned to multiple classes
-6. Fee transactions are immutable once created
-7. Student-class relationship is one-to-one
+- **Authentication**: JWT tokens with 24-hour expiry
+- **Password Hashing**: SHA-512 + bcrypt (12 rounds)
+- **Device Verification**: Admin-approved device access
+- **Role-Based Access**: Admin-only endpoints
+- **Rate Limiting**: 100 requests per 15 minutes
+- **Input Validation**: All inputs validated and sanitized
+- **HTTP Security**: Helmet.js headers, CORS protection
+- **NoSQL Injection**: mongo-sanitize middleware
+- **DTOs**: Sensitive data filtered from responses
 
 ## Database Schemas
 
-### User
-- email, password (hashed), firstName, lastName
-- role (admin, teacher, student, parent)
-- deviceIds[] with verification status
-- isActive, lastLogin
+**User** - Authentication and device management  
+**Student** - Student profiles and fee balances  
+**Teacher** - Teacher profiles and class assignments  
+**Class** - Class details and schedules  
+**Grade** - Academic grades by subject and term  
+**Attendance** - Daily attendance records  
+**FeeTransaction** - Fee deposits and withdrawals  
+**Notification** - System notifications  
 
-### Student
-- userId (ref User), studentId (unique)
-- classId (ref Class)
-- feeBalance, dateOfBirth, address
+## Key Implementation Details
 
-### Teacher
-- userId (ref User), teacherId (unique)
-- assignedClasses[] (ref Class)
-- subjects[], qualification, hireDate
+**Device Verification Workflow**
+1. User logs in with auto-generated device ID
+2. Device stored as "pending verification"
+3. Admin reviews and approves in Verifications page
+4. User gains system access after approval
+5. Multiple devices per user supported
 
-### Class
-- name (unique), grade, section
-- teacherId (ref Teacher)
-- academicYear, capacity
-- schedule[] (day, subject, startTime, endTime, teacherId)
+**Data Transfer Objects (DTOs)**
+- All API responses use DTOs
+- Sensitive fields (passwords, internal IDs) excluded
+- Consistent structure across endpoints
 
-### FeeTransaction
-- studentId (ref Student)
-- type (deposit/withdraw)
-- amount, description, status
-- balanceAfter, transactionDate, processedBy
-
-### Grade
-- studentId, classId, subject
-- score, grade, term, academicYear
-- examType, teacherId, remarks
-
-### Attendance
-- studentId, classId, date
-- status (present/absent/late/excused)
-- recordedBy (ref Teacher), remarks
+**Shared Database**
+- Admin and Client apps share the same MongoDB database
+- Ensures data consistency across applications
+- Single source of truth for all entities
 
 ## Troubleshooting
 
-### Cannot login as admin
-- Verify admin user exists in database
-- Check role is set to "admin"
-- Ensure password is correctly hashed
-- Verify device ID is registered and verified
+**Cannot login as admin**
+```bash
+cd backend
+node check-admin.js  # Verify admin exists
+node reset-admin.js  # Reset password if needed
+```
 
-### Classes not loading
-- Check MongoDB connection
-- Verify admin authentication token
-- Check browser console for errors
+**MongoDB connection failed**
+```bash
+# Check if MongoDB is running
+sudo systemctl status mongod
+sudo systemctl start mongod
+```
 
-### Device verification not working
-- Ensure device ID is being sent in headers
-- Check user's deviceIds array in database
-- Verify admin has permission to verify devices
+**Port already in use**
+```bash
+# Find process using port 5001
+lsof -i :5001
+# Change PORT in .env or kill the process
+```
+
+**Device not verified**
+- Login as admin
+- Navigate to Verifications page
+- Approve pending device
 
 ## Production Deployment
 
-### Backend
-1. Set `NODE_ENV=production`
-2. Use strong `JWT_SECRET`
-3. Configure production MongoDB URI
-4. Enable HTTPS
-5. Set proper CORS origins
-6. Use process manager (PM2)
-7. Configure logging
-8. Set up monitoring
+**Backend**
+1. Set strong JWT_SECRET (min 32 characters)
+2. Use production MongoDB URI (MongoDB Atlas recommended)
+3. Enable HTTPS
+4. Configure proper CORS origins
+5. Use PM2 for process management
+6. Set up monitoring and logging
 
-### Frontend
-1. Build production bundle: `npm run build`
-2. Serve with Nginx or similar
-3. Configure environment variables
-4. Enable HTTPS
-5. Set up CDN (optional)
-6. Configure error tracking
+**Frontend**
+1. Build: `npm run build`
+2. Serve with Nginx
+3. Enable HTTPS
+4. Configure CDN (optional)
 
-## Admin Best Practices
+**Security Checklist**
+- Change all default credentials
+- Enable MongoDB authentication
+- Use environment variables for secrets
+- Set NODE_ENV=production
+- Configure firewall rules
+- Set up automated backups
 
-1. **Regular Monitoring**: Check dashboard daily for system health
-2. **Device Verification**: Review and process requests promptly
-3. **Class Management**: Keep class assignments up to date
-4. **Fee Oversight**: Monitor unusual transaction patterns
-5. **Security**: Regularly review user access and permissions
-6. **Data Backup**: Ensure regular database backups
-7. **Audit Logs**: Review system logs for anomalies
+## Design Decisions
 
-## Support
-
-For technical support or questions, contact the development team.
+- **Layered Architecture**: Routes → Controllers → Services → Models
+- **JWT over Sessions**: Stateless authentication for scalability
+- **DTOs**: Prevent sensitive data exposure
+- **Device Verification**: Enhanced security for multi-device access
+- **Shared Database**: Data consistency between admin and client apps
 
 ## License
 
 ISC
+
+## Support
+
+For technical support or questions, refer to the API documentation at `/api-docs` or contact the development team.
+
+---

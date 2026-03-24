@@ -10,6 +10,7 @@ function Login() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState({ type: '', text: '' });
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -19,6 +20,9 @@ function Login() {
     
     if (fieldErrors[name]) {
       setFieldErrors({ ...fieldErrors, [name]: '' });
+    }
+    if (statusMessage.text) {
+      setStatusMessage({ type: '', text: '' });
     }
   };
 
@@ -39,6 +43,7 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFieldErrors({});
+    setStatusMessage({ type: '', text: '' });
 
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
@@ -52,12 +57,18 @@ function Login() {
       const response = await login(formData.email, formData.password);
       
       if (response.success) {
-        if (response.data.user.role !== 'admin') {
-          setFieldErrors({ general: 'Access denied. Admin account required.' });
+        const role = response.data.user.role;
+        if (role !== 'admin' && role !== 'teacher') {
+          setFieldErrors({ general: 'Access denied. Management account required.' });
           setLoading(false);
           return;
         }
         navigate('/');
+      } else if (response.requiresVerification) {
+        setStatusMessage({ 
+          type: 'warning', 
+          text: response.message || 'Waiting for Admin Approval' 
+        });
       } else {
         setFieldErrors({ general: response.message || 'Login failed' });
       }
@@ -72,8 +83,8 @@ function Login() {
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={styles.header}>
-          <h1 style={styles.title}>Admin Portal</h1>
-          <p style={styles.subtitle}>Sign in to manage your school</p>
+          <h1 style={styles.title}>Management Portal</h1>
+          <p style={styles.subtitle}>Sign in to the staff portal</p>
         </div>
 
         <form onSubmit={handleSubmit} noValidate>
@@ -83,6 +94,15 @@ function Login() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               {fieldErrors.general}
+            </div>
+          )}
+
+          {statusMessage.text && (
+            <div style={statusMessage.type === 'warning' ? styles.alertWarning : styles.alertInfo}>
+              <svg style={styles.alertIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {statusMessage.text}
             </div>
           )}
           
@@ -100,7 +120,7 @@ function Login() {
                 ...(fieldErrors.email ? styles.inputError : {})
               }}
               disabled={loading}
-              placeholder="admin@example.com"
+              placeholder="you@example.com"
             />
             {fieldErrors.email && (
               <span style={styles.errorText}>{fieldErrors.email}</span>
@@ -269,6 +289,30 @@ const styles = {
     border: '1px solid #fecaca',
     borderRadius: '8px',
     color: '#991b1b',
+    marginBottom: '20px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '14px',
+  },
+  alertWarning: {
+    padding: '12px 16px',
+    backgroundColor: '#fffbeb',
+    border: '1px solid #fef3c7',
+    borderRadius: '8px',
+    color: '#92400e',
+    marginBottom: '20px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '14px',
+  },
+  alertInfo: {
+    padding: '12px 16px',
+    backgroundColor: '#eff6ff',
+    border: '1px solid #dbeafe',
+    borderRadius: '8px',
+    color: '#1e40af',
     marginBottom: '20px',
     display: 'flex',
     alignItems: 'center',

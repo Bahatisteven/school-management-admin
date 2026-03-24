@@ -1,23 +1,173 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { adminService } from '../services';
+import { useAuth } from '../utils/AuthContext';
 import { 
   Users, 
   GraduationCap, 
   BookOpen, 
   DollarSign, 
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Calendar
 } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+
+function StudentView({ user }) {
+  const [attendance, setAttendance] = useState([]);
+  const [grades, setGrades] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [attRes, gradeRes] = await Promise.all([
+          academicService.getStudentAttendance(),
+          academicService.getStudentGrades()
+        ]);
+        setAttendance(attRes.data);
+        setGrades(gradeRes.data);
+      } catch (err) {
+        console.error('Error fetching student data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) return <div className="loading">Loading your records...</div>;
+
+  const presentCount = attendance.filter(a => a.status === 'present').length;
+  const attendanceRate = attendance.length > 0 
+    ? ((presentCount / attendance.length) * 100).toFixed(1) 
+    : 0;
+
+  return (
+    <div className="container">
+      <div className="page-header">
+        <h1>Student Dashboard</h1>
+        <p>Welcome back, {user?.firstName}! Here's your academic progress.</p>
+      </div>
+
+      <div className="grid grid-3">
+        <div className="stat-card-modern">
+          <div className="stat-card-header">
+            <div className="stat-icon-wrapper" style={{ background: '#10b981' }}>
+              <CheckCircle size={20} color="white" />
+            </div>
+            <h3 className="stat-title">Attendance Rate</h3>
+          </div>
+          <div className="stat-number">{attendanceRate}%</div>
+        </div>
+        
+        <div className="stat-card-modern">
+          <div className="stat-card-header">
+            <div className="stat-icon-wrapper" style={{ background: '#667eea' }}>
+              <GraduationCap size={20} color="white" />
+            </div>
+            <h3 className="stat-title">Total Subjects</h3>
+          </div>
+          <div className="stat-number">{new Set(grades.map(g => g.subject)).size}</div>
+        </div>
+
+        <div className="stat-card-modern">
+          <div className="stat-card-header">
+            <div className="stat-icon-wrapper" style={{ background: '#f59e0b' }}>
+              <Calendar size={20} color="white" />
+            </div>
+            <h3 className="stat-title">Days Recorded</h3>
+          </div>
+          <div className="stat-number">{attendance.length}</div>
+        </div>
+      </div>
+
+      <div className="grid grid-2 mt-6">
+        <div className="card">
+          <div className="chart-header">
+            <h2 className="chart-title">Recent Grades</h2>
+          </div>
+          {grades.length > 0 ? (
+            <div className="table-responsive mt-4">
+              <table style={{ width: '100%' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                    <th style={{ padding: '12px', textAlign: 'left' }}>Subject</th>
+                    <th style={{ padding: '12px', textAlign: 'left' }}>Exam</th>
+                    <th style={{ padding: '12px', textAlign: 'center' }}>Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {grades.slice(0, 5).map((grade, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                      <td style={{ padding: '12px' }}>{grade.subject}</td>
+                      <td style={{ padding: '12px', textTransform: 'capitalize' }}>{grade.examType}</td>
+                      <td style={{ padding: '12px', textAlign: 'center' }}>
+                        <span className={`badge ${grade.score >= 50 ? 'badge-success' : 'badge-danger'}`}>
+                          {grade.score}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-center py-4">No grades recorded yet.</p>
+          )}
+        </div>
+
+        <div className="card">
+          <div className="chart-header">
+            <h2 className="chart-title">Recent Attendance</h2>
+          </div>
+          {attendance.length > 0 ? (
+            <div className="table-responsive mt-4">
+              <table style={{ width: '100%' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                    <th style={{ padding: '12px', textAlign: 'left' }}>Date</th>
+                    <th style={{ padding: '12px', textAlign: 'center' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {attendance.slice(0, 5).map((att, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                      <td style={{ padding: '12px' }}>{new Date(att.date).toLocaleDateString()}</td>
+                      <td style={{ padding: '12px', textAlign: 'center' }}>
+                        <span className={`badge ${
+                          att.status === 'present' ? 'badge-success' : 
+                          att.status === 'absent' ? 'badge-danger' : 'badge-warning'
+                        }`}>
+                          {att.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-center py-4">No attendance recorded yet.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Dashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
-    loadDashboard();
-  }, []);
+    if (user?.role === 'admin' || user?.role === 'teacher') {
+      loadDashboard();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
   const loadDashboard = async () => {
     try {
@@ -38,6 +188,88 @@ function Dashboard() {
           <div className="loading">
             <div className="loading-spinner"></div>
             <div className="loading-text">Loading dashboard...</div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (user?.role === 'student') {
+    return (
+      <>
+        <Navbar />
+        <StudentView user={user} />
+      </>
+    );
+  }
+
+  const isAdmin = user?.role === 'admin';
+
+  if (!isAdmin) {
+    return (
+      <>
+        <Navbar />
+        <div className="container">
+          <div className="page-header">
+            <h1>Teacher Overview</h1>
+            <p>Welcome back, {user?.firstName}! Here are your assigned classes and students.</p>
+          </div>
+
+          <div className="grid grid-2">
+            <div className="stat-card-modern">
+              <div className="stat-card-header">
+                <div className="stat-icon-wrapper" style={{ background: '#667eea' }}>
+                  <Users size={20} strokeWidth={2.5} />
+                </div>
+                <h3 className="stat-title">My Total Students</h3>
+              </div>
+              <div className="stat-number">{stats?.totalStudents || 0}</div>
+            </div>
+            <div className="stat-card-modern">
+              <div className="stat-card-header">
+                <div className="stat-icon-wrapper" style={{ background: '#4facfe' }}>
+                  <BookOpen size={20} strokeWidth={2.5} />
+                </div>
+                <h3 className="stat-title">My Classes</h3>
+              </div>
+              <div className="stat-number">{stats?.totalClasses || 0}</div>
+            </div>
+          </div>
+
+          <div className="card mt-6">
+            <div className="chart-header">
+              <h2 className="chart-title">My Assigned Classes</h2>
+              <p className="chart-subtitle">Direct management of your school groups</p>
+            </div>
+            {stats?.assignedClasses && stats.assignedClasses.length > 0 ? (
+              <div className="grid grid-3 mt-4">
+                {stats.assignedClasses.map((cls) => (
+                  <div key={cls.id || cls._id} className="card" style={{ background: '#f9fafb', marginBottom: 0 }}>
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 style={{ margin: 0 }}>{cls.name}</h3>
+                      <span className="badge badge-info">{cls.grade}</span>
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                      <p className="mb-2"><strong>Capacity:</strong> {cls.capacity} Students</p>
+                      <p><strong>Schedule:</strong> {cls.schedule?.length || 0} Slots</p>
+                    </div>
+                    <div className="mt-4">
+                      <button 
+                        className="btn btn-primary btn-sm w-full"
+                        onClick={() => window.location.href = '/classes'}
+                      >
+                        View Class Details
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <BookOpen size={48} style={{ opacity: 0.2, marginBottom: '12px' }} />
+                <p className="empty-state-text">You haven't been assigned to any classes yet.</p>
+              </div>
+            )}
           </div>
         </div>
       </>

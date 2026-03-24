@@ -72,11 +72,13 @@ const gradeValidation = [
 ];
 
 const attendanceValidation = [
-  body('studentId').isMongoId().withMessage('Valid student ID is required'),
-  body('classId').isMongoId().withMessage('Valid class ID is required'),
-  body('status').isIn(Object.values(ATTENDANCE_STATUS)).withMessage('Invalid status'),
   body('date').isISO8601().withMessage('Valid date is required'),
-  body('remarks').optional().trim().isLength({ max: 500 }),
+  body('classId').optional().isMongoId().withMessage('Valid class ID is required'),
+  body('studentId').optional().isMongoId().withMessage('Valid student ID is required'),
+  body('status').optional().isIn(Object.values(ATTENDANCE_STATUS)).withMessage('Invalid status'),
+  body('students').optional().isArray().withMessage('Students must be an array'),
+  body('students.*.studentId').optional().isMongoId().withMessage('Invalid student ID in list'),
+  body('students.*.status').optional().isIn(Object.values(ATTENDANCE_STATUS)),
   validate,
 ];
 
@@ -103,6 +105,21 @@ const updateClassValidation = [
 const assignTeacherValidation = [
   body('teacherId').isMongoId().withMessage('Valid teacher ID is required'),
   body('classId').isMongoId().withMessage('Valid class ID is required'),
+  validate,
+];
+
+const createTeacherValidation = [
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+  body('password')
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('Password must contain uppercase, lowercase and number'),
+  body('firstName').trim().notEmpty().isLength({ min: 2, max: 50 }).withMessage('First name is required (2-50 chars)'),
+  body('lastName').trim().notEmpty().isLength({ min: 2, max: 50 }).withMessage('Last name is required (2-50 chars)'),
+  body('phoneNumber').optional().trim().matches(/^\+?[1-9]\d{1,14}$/).withMessage('Invalid phone number format'),
+  body('subjects').isArray({ min: 1 }).withMessage('At least one subject is required'),
+  body('qualification').trim().notEmpty().withMessage('Qualification is required'),
   validate,
 ];
 
@@ -155,6 +172,7 @@ module.exports = {
   attendanceValidation,
   createClassValidation,
   updateClassValidation,
+  createTeacherValidation,
   assignTeacherValidation,
   assignStudentValidation,
   verifyDeviceValidation,

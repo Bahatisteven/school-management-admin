@@ -29,11 +29,11 @@ function Navbar() {
   const links = [
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/students', label: 'Students', icon: Users },
-    { path: '/teachers', label: 'Teachers', icon: GraduationCap },
+    { path: '/teachers', label: 'Teachers', icon: GraduationCap, roles: ['admin'] },
     { path: '/classes', label: 'Classes', icon: BookOpen },
-    { path: '/fees', label: 'Fees', icon: DollarSign },
-    { path: '/verifications', label: 'Verifications', icon: CheckCircle },
-  ];
+    { path: '/fees', label: 'Fees', icon: DollarSign, roles: ['admin'] },
+    { path: '/verifications', label: 'Verifications', icon: CheckCircle, roles: ['admin'] },
+  ].filter(link => !link.roles || link.roles.includes(user?.role));
 
   return (
     <>
@@ -41,7 +41,7 @@ function Navbar() {
         <div style={styles.container}>
           <div style={styles.logoSection}>
             <div style={styles.logoIcon}>📚</div>
-            <h2 style={styles.logo}>School Admin</h2>
+            <h2 style={styles.logo}>School Management</h2>
           </div>
           
           <button 
@@ -83,7 +83,7 @@ function Navbar() {
               </div>
               <div style={styles.userDetails} className="user-details">
                 <span style={styles.userName}>{user?.firstName} {user?.lastName}</span>
-                <span style={styles.userRole}>Administrator</span>
+                <span style={styles.userRole}>{user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}</span>
               </div>
             </div>
             <button onClick={handleLogout} style={styles.logoutBtn} title="Logout">

@@ -11,7 +11,13 @@ import Verifications from './pages/Verifications';
 
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated, user } = useAuth();
-  return isAuthenticated && user?.role === 'admin' ? children : <Navigate to="/login" />;
+  const allowedRoles = ['admin', 'teacher'];
+  return isAuthenticated && allowedRoles.includes(user?.role) ? children : <Navigate to="/login" />;
+};
+
+const AdminRoute = ({ children }) => {
+  const { isAuthenticated, user } = useAuth();
+  return isAuthenticated && user?.role === 'admin' ? children : <Navigate to="/" />;
 };
 
 function App() {
@@ -22,10 +28,11 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/students" element={<PrivateRoute><Students /></PrivateRoute>} />
-          <Route path="/teachers" element={<PrivateRoute><Teachers /></PrivateRoute>} />
+          <Route path="/teachers" element={<AdminRoute><Teachers /></AdminRoute>} />
           <Route path="/classes" element={<PrivateRoute><Classes /></PrivateRoute>} />
-          <Route path="/fees" element={<PrivateRoute><Fees /></PrivateRoute>} />
-          <Route path="/verifications" element={<PrivateRoute><Verifications /></PrivateRoute>} />
+          <Route path="/fees" element={<AdminRoute><Fees /></AdminRoute>} />
+          <Route path="/verifications" element={<AdminRoute><Verifications /></AdminRoute>} />
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>
     </AuthProvider>

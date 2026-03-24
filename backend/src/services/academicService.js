@@ -5,6 +5,7 @@ const Class = require('../models/Class');
 const GradeDTO = require('../dtos/GradeDTO');
 const AttendanceDTO = require('../dtos/AttendanceDTO');
 const { NotFoundError } = require('../utils/errors');
+const notificationService = require('./notificationService');
 
 class AcademicService {
   async getStudentGrades(studentId) {
@@ -65,6 +66,16 @@ class AcademicService {
     
     const populatedGrade = await Grade.findById(grade._id)
       .populate('teacherId', 'firstName lastName');
+
+    const student = await Student.findById(gradeData.studentId).populate('userId');
+    if (student && student.userId) {
+      // send notif
+      await notificationService.notifyGradeAdded(
+        student.userId._id,
+        gradeData.subject,
+        gradeData.score
+      );
+    }
     
     return GradeDTO.toClient(populatedGrade);
   }
@@ -77,6 +88,53 @@ class AcademicService {
       .populate('recordedBy', 'firstName lastName');
     
     return AttendanceDTO.toClient(populatedAttendance);
+  }
+
+  async recordBulkAttendance(classId, date, records, recordedBy) {
+    const mongoose = require('mongoose');
+    let session = null;
+    
+    const isReplicaSet = mongoose.connection.getClient().topology?.description?.type === 'ReplicaSetWithPrimary' || 
+                        process.env.NODE_ENV === 'production';
+
+    if (isReplicaSet) {
+      session = await mongoose.startSession();
+      session.startTransaction();
+    }
+
+    try {
+      const results = [];
+      const attendanceDate = new Date(date);
+      attendanceDate.setHours(0, 0, 0, 0);
+
+      const options = session ? { session, upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true } 
+                             : { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true };
+
+      for (const record of records) {
+        const query = {
+          studentId: record.studentId,
+          date: attendanceDate,
+        };
+        
+        const update = {
+          classId,
+          status: record.status,
+          remarks: record.remarks || '',
+          recordedBy,
+        };
+
+        const result = await Attendance.findOneAndUpdate(query, update, options);
+        results.push(result);
+      }
+
+      if (session) await session.commitTransaction();
+      return results.length;
+    } catch (error) {
+      if (session) await session.abortTransaction();
+      throw error;
+    } finally {
+      if (session) session.endSession();
+    }
   }
 }
 

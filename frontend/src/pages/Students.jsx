@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { adminService } from '../services';
+import { useAuth } from '../utils/AuthContext';
 
 function Students() {
   const [students, setStudents] = useState([]);
@@ -11,6 +12,9 @@ function Students() {
   const [assigningStudent, setAssigningStudent] = useState(null);
   const [selectedClass, setSelectedClass] = useState('');
   const [assignLoading, setAssignLoading] = useState(false);
+  const { user } = useAuth();
+
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     loadStudents();
@@ -88,7 +92,7 @@ function Students() {
                     <th style={{ padding: '12px', textAlign: 'left' }}>Email</th>
                     <th style={{ padding: '12px', textAlign: 'left' }}>Class</th>
                     <th style={{ padding: '12px', textAlign: 'right' }}>Fee Balance</th>
-                    <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
+                    {isAdmin && <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -105,18 +109,35 @@ function Students() {
                       <td style={{ padding: '12px', textAlign: 'right' }}>
                         RWF {student.feeBalance.toLocaleString()}
                       </td>
-                      <td style={{ padding: '12px', textAlign: 'center' }}>
-                        <button
-                          onClick={() => {
-                            setAssigningStudent(student);
-                            setSelectedClass(student.classId?._id || '');
-                          }}
-                          className="btn btn-primary"
-                          style={{ fontSize: '12px', padding: '5px 10px' }}
-                        >
-                          Assign Class
-                        </button>
-                      </td>
+                      {isAdmin && (
+                        <td style={{ padding: '12px', textAlign: 'center' }}>
+                          {student.classId ? (
+                            <div style={{ color: '#10b981', fontWeight: '600' }}>
+                              {student.classId.name}
+                              <button
+                                onClick={() => {
+                                  setAssigningStudent(student);
+                                  setSelectedClass(student.classId?._id || student.classId?.id || '');
+                                }}
+                                className="btn btn-secondary btn-sm"
+                                style={{ marginLeft: '10px', padding: '2px 8px', fontSize: '10px' }}
+                              >
+                                Change
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setAssigningStudent(student);
+                                setSelectedClass('');
+                              }}
+                              className="btn btn-primary btn-sm"
+                            >
+                              Assign Class
+                            </button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

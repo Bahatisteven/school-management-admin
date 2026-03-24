@@ -52,6 +52,11 @@ export const adminService = {
     return response.data;
   },
 
+  createTeacher: async (teacherData) => {
+    const response = await api.post('/admin/teachers', teacherData);
+    return response.data;
+  },
+
   getClasses: async () => {
     const response = await api.get('/admin/classes');
     return response.data;
@@ -101,6 +106,44 @@ export const adminService = {
 
   verifyDevice: async (userId, deviceId) => {
     const response = await api.post('/admin/verify-device', { userId, deviceId });
+    return response.data;
+  },
+};
+
+export const studentService = {
+  getProfile: async () => {
+    const response = await api.get('/students/profile');
+    return response.data;
+  },
+};
+
+export const academicService = {
+  addGrade: async (gradeData) => {
+    const response = await api.post('/academic/grades', gradeData);
+    return response.data;
+  },
+
+  recordAttendance: async (attendanceData) => {
+    const response = await api.post('/academic/attendance', attendanceData);
+    return response.data;
+  },
+
+  getStudentAttendance: async (startDate, endDate) => {
+    const response = await api.get('/academic/attendance', {
+      params: { startDate, endDate },
+    });
+    return response.data;
+  },
+
+  getStudentGrades: async () => {
+    const response = await api.get('/academic/grades');
+    return response.data;
+  },
+
+  getAttendanceReport: async (classId, startDate, endDate) => {
+    const response = await api.get('/admin/attendance-report', {
+      params: { classId, startDate, endDate },
+    });
     return response.data;
   },
 };

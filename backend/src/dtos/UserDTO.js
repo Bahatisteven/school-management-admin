@@ -2,6 +2,7 @@ class UserDTO {
   static toClient(user) {
     return {
       id: user._id,
+      _id: user._id, // For compatibility
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,

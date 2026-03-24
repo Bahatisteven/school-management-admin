@@ -56,13 +56,6 @@ app.use('/api', limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Temporarily disabled due to Express v5 compatibility issue
-// app.use(mongoSanitize({
-//   replaceWith: '_',
-//   onSanitize: ({ req, key }) => {
-//     console.warn(`Sanitized ${key} in request`);
-//   },
-// }));
 app.use(hpp());
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {

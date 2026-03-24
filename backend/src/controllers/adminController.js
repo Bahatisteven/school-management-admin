@@ -4,7 +4,7 @@ const authService = require('../services/authService');
 class AdminController {
   async getDashboard(req, res, next) {
     try {
-      const stats = await adminService.getDashboardStats();
+      const stats = await adminService.getDashboardStats(req.user);
       res.json({
         success: true,
         data: stats,
@@ -20,7 +20,8 @@ class AdminController {
       const result = await adminService.getAllStudents(
         parseInt(page),
         parseInt(limit),
-        search
+        search,
+        req.user
       );
 
       res.json({
@@ -46,9 +47,24 @@ class AdminController {
     }
   }
 
+  async createTeacher(req, res, next) {
+    try {
+      const teacherData = req.body;
+      const teacher = await adminService.createTeacher(teacherData);
+
+      res.status(201).json({
+        success: true,
+        message: 'Teacher created successfully',
+        data: teacher,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getClasses(req, res, next) {
     try {
-      const classes = await adminService.getAllClasses();
+      const classes = await adminService.getAllClasses(req.user);
       res.json({
         success: true,
         data: classes,

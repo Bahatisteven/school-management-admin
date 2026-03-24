@@ -64,6 +64,24 @@ class AcademicController {
 
   async recordAttendance(req, res, next) {
     try {
+      const { classId, date, students } = req.body;
+      
+      if (Array.isArray(students)) {
+        // bulk recording for multiple students
+        const count = await academicService.recordBulkAttendance(
+          classId,
+          date,
+          students,
+          req.user._id
+        );
+        
+        return res.status(201).json({
+          success: true,
+          message: `${count} attendance records saved successfully`,
+        });
+      }
+
+      //single record 
       const attendance = await academicService.recordAttendance({
         ...req.body,
         recordedBy: req.user._id,
