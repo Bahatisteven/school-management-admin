@@ -118,6 +118,21 @@ class AdminController {
     }
   }
 
+  async assignStudent(req, res, next) {
+    try {
+      const { studentId, classId } = req.body;
+      const result = await adminService.assignStudentToClass(studentId, classId);
+
+      res.json({
+        success: true,
+        message: result.message,
+        data: result.student,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getFeeTransactions(req, res, next) {
     try {
       const { page = 1, limit = 50, type, status, startDate, endDate } = req.query;

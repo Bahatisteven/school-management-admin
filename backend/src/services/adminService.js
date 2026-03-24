@@ -174,6 +174,37 @@ class AdminService {
     };
   }
 
+  async assignStudentToClass(studentId, classId) {
+    const student = await Student.findById(studentId);
+    if (!student) {
+      throw new NotFoundError('Student');
+    }
+
+    if (classId) {
+      const classDoc = await Class.findById(classId);
+      if (!classDoc) {
+        throw new NotFoundError('Class');
+      }
+
+      const currentClassStudents = await Student.countDocuments({ classId });
+      if (currentClassStudents >= classDoc.capacity) {
+        throw new ConflictError('Class has reached maximum capacity');
+      }
+    }
+
+    student.classId = classId || null;
+    await student.save();
+
+    const populatedStudent = await Student.findById(studentId)
+      .populate('userId', 'firstName lastName email phoneNumber')
+      .populate('classId', 'name grade section');
+
+    return {
+      student: StudentDTO.toClient(populatedStudent, populatedStudent.userId),
+      message: classId ? 'Student assigned to class successfully' : 'Student removed from class successfully',
+    };
+  }
+
   async getAllFeeTransactions(page = PAGINATION.DEFAULT_PAGE, limit = PAGINATION.TRANSACTION_LIMIT, filters = {}) {
     const query = {};
     if (filters.type) query.type = filters.type;

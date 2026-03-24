@@ -6,6 +6,7 @@ const {
   createClassValidation, 
   updateClassValidation, 
   assignTeacherValidation,
+  assignStudentValidation,
   verifyDeviceValidation,
   dateRangeValidation,
   idValidation,
@@ -24,6 +25,7 @@ router.post('/classes', createClassValidation, adminController.createClass);
 router.put('/classes/:id', idValidation, updateClassValidation, adminController.updateClass);
 router.delete('/classes/:id', idValidation, adminController.deleteClass);
 router.post('/assign-teacher', assignTeacherValidation, adminController.assignTeacher);
+router.post('/assign-student', assignStudentValidation, adminController.assignStudent);
 router.get('/fee-transactions', paginationValidation, adminController.getFeeTransactions);
 router.get('/attendance-report', dateRangeValidation, adminController.getAttendanceReport);
 router.get('/pending-verifications', adminController.getPendingVerifications);

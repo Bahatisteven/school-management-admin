@@ -106,6 +106,12 @@ const assignTeacherValidation = [
   validate,
 ];
 
+const assignStudentValidation = [
+  body('studentId').isMongoId().withMessage('Valid student ID is required'),
+  body('classId').optional().isMongoId().withMessage('Valid class ID is required (or null to remove)'),
+  validate,
+];
+
 const verifyDeviceValidation = [
   body('userId').isMongoId().withMessage('Valid user ID is required'),
   body('deviceId').trim().notEmpty().isLength({ min: 5, max: 100 }).withMessage('Valid device ID is required'),
@@ -147,6 +153,7 @@ module.exports = {
   createClassValidation,
   updateClassValidation,
   assignTeacherValidation,
+  assignStudentValidation,
   verifyDeviceValidation,
   updateProfileValidation,
   dateRangeValidation,

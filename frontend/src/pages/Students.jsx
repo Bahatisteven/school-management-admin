@@ -4,12 +4,17 @@ import { adminService } from '../services';
 
 function Students() {
   const [students, setStudents] = useState([]);
+  const [classes, setClasses] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [assigningStudent, setAssigningStudent] = useState(null);
+  const [selectedClass, setSelectedClass] = useState('');
+  const [assignLoading, setAssignLoading] = useState(false);
 
   useEffect(() => {
     loadStudents();
+    loadClasses();
   }, [search]);
 
   const loadStudents = async (page = 1) => {
@@ -22,6 +27,35 @@ function Students() {
       console.error('Error loading students:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadClasses = async () => {
+    try {
+      const response = await adminService.getClasses();
+      setClasses(response.data);
+    } catch (error) {
+      console.error('Error loading classes:', error);
+    }
+  };
+
+  const handleAssignClass = async () => {
+    if (!assigningStudent || assignLoading) return;
+    
+    setAssignLoading(true);
+    try {
+      await adminService.assignStudentToClass(
+        assigningStudent._id,
+        selectedClass || null
+      );
+      alert(selectedClass ? 'Student assigned to class successfully!' : 'Student removed from class successfully!');
+      setAssigningStudent(null);
+      setSelectedClass('');
+      loadStudents(pagination?.page || 1);
+    } catch (error) {
+      alert(error.response?.data?.error || 'Failed to assign student to class');
+    } finally {
+      setAssignLoading(false);
     }
   };
 
@@ -52,6 +86,7 @@ function Students() {
                     <th style={{ padding: '12px', textAlign: 'left' }}>Email</th>
                     <th style={{ padding: '12px', textAlign: 'left' }}>Class</th>
                     <th style={{ padding: '12px', textAlign: 'right' }}>Fee Balance</th>
+                    <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -62,9 +97,23 @@ function Students() {
                         {student.userId?.firstName} {student.userId?.lastName}
                       </td>
                       <td style={{ padding: '12px' }}>{student.userId?.email}</td>
-                      <td style={{ padding: '12px' }}>{student.classId?.name || 'Not assigned'}</td>
+                      <td style={{ padding: '12px' }}>
+                        {student.classId?.name || <span style={{ color: '#999' }}>Not assigned</span>}
+                      </td>
                       <td style={{ padding: '12px', textAlign: 'right' }}>
                         RWF {student.feeBalance.toLocaleString()}
+                      </td>
+                      <td style={{ padding: '12px', textAlign: 'center' }}>
+                        <button
+                          onClick={() => {
+                            setAssigningStudent(student);
+                            setSelectedClass(student.classId?._id || '');
+                          }}
+                          className="btn btn-primary"
+                          style={{ fontSize: '12px', padding: '5px 10px' }}
+                        >
+                          Assign Class
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -90,6 +139,67 @@ function Students() {
             <p>No students found</p>
           )}
         </div>
+
+        {/* Assign Class Modal */}
+        {assigningStudent && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}>
+            <div className="card" style={{ maxWidth: '500px', width: '90%' }}>
+              <h3>Assign Student to Class</h3>
+              <p style={{ marginBottom: '20px' }}>
+                Student: <strong>{assigningStudent.userId?.firstName} {assigningStudent.userId?.lastName}</strong>
+                <br />
+                Student ID: <strong>{assigningStudent.studentId}</strong>
+              </p>
+
+              <div className="form-group">
+                <label>Select Class:</label>
+                <select
+                  value={selectedClass}
+                  onChange={(e) => setSelectedClass(e.target.value)}
+                  style={{ width: '100%', padding: '10px', marginTop: '5px' }}
+                >
+                  <option value="">-- Remove from class --</option>
+                  {classes.map((cls) => (
+                    <option key={cls._id} value={cls._id}>
+                      {cls.name} - Grade {cls.grade} {cls.section ? `(${cls.section})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => {
+                    setAssigningStudent(null);
+                    setSelectedClass('');
+                  }}
+                  className="btn btn-secondary"
+                  disabled={assignLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAssignClass}
+                  className="btn btn-primary"
+                  disabled={assignLoading}
+                >
+                  {assignLoading ? 'Assigning...' : 'Assign'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

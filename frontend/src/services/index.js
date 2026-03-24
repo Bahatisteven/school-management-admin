@@ -77,6 +77,11 @@ export const adminService = {
     return response.data;
   },
 
+  assignStudentToClass: async (studentId, classId) => {
+    const response = await api.post('/admin/assign-student', { studentId, classId });
+    return response.data;
+  },
+
   getFeeTransactions: async (page = 1, filters = {}) => {
     const response = await api.get('/admin/fee-transactions', { params: { page, ...filters } });
     return response.data;
