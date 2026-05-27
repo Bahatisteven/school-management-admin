@@ -14,28 +14,6 @@ const { RATE_LIMIT } = require('./config/constants');
 
 const app = express();
 
-// connect DB on each request for serverless compatibility
-app.use(async (req, res, next) => {
-  try {
-    await connectDB();
-    next();
-  } catch (err) {
-    res.status(503).json({ error: 'Database unavailable', details: err.message });
-  }
-});
-
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", 'data:', 'https:'],
-    },
-  },
-  crossOriginEmbedderPolicy: false,
-}));
-
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
   : ['http://localhost:5173', 'http://localhost:3000'];
@@ -57,6 +35,22 @@ app.use(cors({
   credentials: true,
 }));
 
+// DB connection — runs per request for Vercel serverless
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    res.status(503).json({ error: 'Database unavailable', details: err.message });
+  }
+});
+
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: false,
+}));
+
 const limiter = rateLimit({
   windowMs: RATE_LIMIT.WINDOW_MS,
   max: RATE_LIMIT.MAX_REQUESTS,
@@ -73,7 +67,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(hpp());
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'School Management API',
 }));
 
@@ -94,7 +87,6 @@ const PORT = process.env.PORT || 5001;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`API Documentation available at http://localhost:${PORT}/api-docs`);
 });
 
 module.exports = app;
