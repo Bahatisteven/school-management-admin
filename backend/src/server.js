@@ -14,7 +14,15 @@ const { RATE_LIMIT } = require('./config/constants');
 
 const app = express();
 
-connectDB();
+// connect DB on each request for serverless compatibility
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    res.status(503).json({ error: 'Database unavailable', details: err.message });
+  }
+});
 
 app.use(helmet({
   contentSecurityPolicy: {
